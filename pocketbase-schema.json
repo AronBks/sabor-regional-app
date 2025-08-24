@@ -1,0 +1,247 @@
+{
+  "collections": [
+    {
+      "name": "ingredients",
+      "type": "base",
+      "system": false,
+      "schema": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "options": {
+            "min": 1,
+            "max": 255
+          }
+        },
+        {
+          "name": "category",
+          "type": "select",
+          "required": true,
+          "options": {
+            "values": [
+              "carnes",
+              "verduras",
+              "frutas",
+              "lacteos",
+              "granos",
+              "especias",
+              "otros"
+            ]
+          }
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "options": {
+            "max": 500
+          }
+        },
+        {
+          "name": "image_url",
+          "type": "url",
+          "required": false
+        },
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "options": {
+            "collectionId": "users",
+            "cascadeDelete": true
+          }
+        }
+      ],
+      "indexes": [],
+      "listRule": "@request.auth.id != \"\"",
+      "viewRule": "@request.auth.id != \"\"",
+      "createRule": "@request.auth.id != \"\" && @request.auth.id = user_id",
+      "updateRule": "@request.auth.id != \"\" && @request.auth.id = user_id",
+      "deleteRule": "@request.auth.id != \"\" && @request.auth.id = user_id"
+    },
+    {
+      "name": "recipes",
+      "type": "base",
+      "system": false,
+      "schema": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "options": {
+            "min": 1,
+            "max": 255
+          }
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": true,
+          "options": {
+            "max": 1000
+          }
+        },
+        {
+          "name": "instructions",
+          "type": "text",
+          "required": true,
+          "options": {
+            "max": 5000
+          }
+        },
+        {
+          "name": "prep_time",
+          "type": "number",
+          "required": false,
+          "options": {
+            "min": 0
+          }
+        },
+        {
+          "name": "cook_time",
+          "type": "number",
+          "required": false,
+          "options": {
+            "min": 0
+          }
+        },
+        {
+          "name": "servings",
+          "type": "number",
+          "required": false,
+          "options": {
+            "min": 1
+          }
+        },
+        {
+          "name": "difficulty",
+          "type": "select",
+          "required": false,
+          "options": {
+            "values": [
+              "facil",
+              "intermedio",
+              "avanzado"
+            ]
+          }
+        },
+        {
+          "name": "region",
+          "type": "select",
+          "required": false,
+          "options": {
+            "values": [
+              "Andina",
+              "Costa",
+              "Selva",
+              "Sierra",
+              "Pampa",
+              "Altiplano"
+            ]
+          }
+        },
+        {
+          "name": "image_url",
+          "type": "url",
+          "required": false
+        },
+        {
+          "name": "video_url",
+          "type": "url",
+          "required": false
+        },
+        {
+          "name": "ingredients",
+          "type": "relation",
+          "required": false,
+          "options": {
+            "collectionId": "ingredients",
+            "cascadeDelete": false,
+            "minSelect": null,
+            "maxSelect": null
+          }
+        },
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "options": {
+            "collectionId": "users",
+            "cascadeDelete": true
+          }
+        }
+      ],
+      "indexes": [],
+      "listRule": "@request.auth.id != \"\"",
+      "viewRule": "@request.auth.id != \"\"",
+      "createRule": "@request.auth.id != \"\" && @request.auth.id = user_id",
+      "updateRule": "@request.auth.id != \"\" && @request.auth.id = user_id",
+      "deleteRule": "@request.auth.id != \"\" && @request.auth.id = user_id"
+    },
+    {
+      "name": "ingredient_analysis",
+      "type": "base",
+      "system": false,
+      "schema": [
+        {
+          "name": "image_url",
+          "type": "text",
+          "required": true,
+          "options": {
+            "max": 2000
+          }
+        },
+        {
+          "name": "detected_ingredients",
+          "type": "json",
+          "required": true,
+          "options": {}
+        },
+        {
+          "name": "confidence_score",
+          "type": "number",
+          "required": true,
+          "options": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        {
+          "name": "analysis_time",
+          "type": "number",
+          "required": true,
+          "options": {
+            "min": 0
+          }
+        },
+        {
+          "name": "suggested_recipes",
+          "type": "relation",
+          "required": false,
+          "options": {
+            "collectionId": "recipes",
+            "cascadeDelete": false,
+            "minSelect": null,
+            "maxSelect": null
+          }
+        },
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "options": {
+            "collectionId": "users",
+            "cascadeDelete": true
+          }
+        }
+      ],
+      "indexes": [],
+      "listRule": "@request.auth.id != \"\" && @request.auth.id = user_id",
+      "viewRule": "@request.auth.id != \"\" && @request.auth.id = user_id",
+      "createRule": "@request.auth.id != \"\" && @request.auth.id = user_id",
+      "updateRule": "@request.auth.id != \"\" && @request.auth.id = user_id",
+      "deleteRule": "@request.auth.id != \"\" && @request.auth.id = user_id"
+    }
+  ]
+}
