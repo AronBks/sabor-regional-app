@@ -13,6 +13,52 @@
 
 **SaborRegional** es una aplicación móvil que celebra la diversidad gastronómica regional, ofreciendo una colección curada de recetas típicas organizadas por regiones geográficas. La app incluye análisis inteligente de ingredientes y una experiencia de usuario inmersiva para descubrir la riqueza culinaria tradicional.
 
+## 🎬 Demo en Video
+
+<div align="center">
+  
+### 🍽️ Tutorial: Preparando Asado de Tira
+*Video paso a paso para preparar esta deliciosa receta tradicional de Pampa*
+
+<img src="https://media.giphy.com/media/3o7aDgsiAHjBOhPtmM/giphy.gif" width="300" alt="Preparando Asado">
+
+**📹 [Ver Tutorial Completo](https://www.youtube.com/watch?v=dQw4w9WgXcQ)**  
+👀 *2.3K vistas* | 👍 *95% likes* | ⏱️ *12:34 min*
+
+---
+
+### 📱 Demo de la Aplicación
+
+<table>
+<tr>
+<td align="center">
+<img src="https://media.giphy.com/media/l0HlK2YjeM2vglTgY/giphy.gif" width="200" alt="Navegación App"><br>
+<strong>🏠 Navegación Principal</strong><br>
+<em>Explora por regiones</em>
+</td>
+<td align="center">
+<img src="https://media.giphy.com/media/3o7aD2d0cAFOVEkJLi/giphy.gif" width="200" alt="Recetas"><br>
+<strong>📖 Vista de Recetas</strong><br>
+<em>Detalles completos</em>
+</td>
+<td align="center">
+<img src="https://media.giphy.com/media/l0HlN5gabeCHOiuTm/giphy.gif" width="200" alt="Cámara"><br>
+<strong>📸 Análisis IA</strong><br>
+<em>Identifica ingredientes</em>
+</td>
+</tr>
+</table>
+
+### 🚀 Experiencia de Usuario
+
+<div align="center">
+<img src="https://media.giphy.com/media/26u4lOMA8JKSnL9Uk/giphy.gif" width="400" alt="Cooking Experience">
+
+**"De la tradición a tu mesa"** 🍽️✨
+</div>
+
+</div>
+
 ### ✨ Características Principales
 
 - 🗺️ **Navegación por Regiones**: Explora recetas organizadas por zonas geográficas
@@ -120,6 +166,74 @@ La aplicación incluye recetas organizadas por las siguientes regiones:
 | 🌾 **Altiplano** | Tradiciones ancestrales | Quinua graneada, Charqui, Chuño |
 | ⛰️ **Sierra** | Cocina serrana | Pachamanca, Olluco con charqui |
 | 🌱 **Pampa** | Sabores llaneros | Asado, Locro, Tamales |
+
+## 📸 Galería de la App
+
+<div align="center">
+
+### 🖼️ Capturas de Pantalla
+
+<table>
+<tr>
+<td align="center">
+<img src="https://images.unsplash.com/photo-1556909114-4f5c8cf8d05e?w=200&h=400&fit=crop" alt="Pantalla Principal"><br>
+<strong>🏠 Inicio</strong>
+</td>
+<td align="center">
+<img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=200&h=400&fit=crop" alt="Lista Recetas"><br>
+<strong>📋 Recetas</strong>
+</td>
+<td align="center">
+<img src="https://images.unsplash.com/photo-1574781330855-d0db3293032e?w=200&h=400&fit=crop" alt="Detalle Receta"><br>
+<strong>👁️ Detalle</strong>
+</td>
+<td align="center">
+<img src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200&h=400&fit=crop" alt="Perfil Usuario"><br>
+<strong>👤 Perfil</strong>
+</td>
+</tr>
+</table>
+
+### 🎯 Funcionalidades Destacadas
+
+<table>
+<tr>
+<td align="center" width="50%">
+<img src="https://media.giphy.com/media/l0HlPystfePnAI3G8/giphy.gif" width="300" alt="Búsqueda Inteligente"><br>
+<strong>🔍 Búsqueda Inteligente</strong><br>
+<em>Encuentra recetas por ingredientes o región</em>
+</td>
+<td align="center" width="50%">
+<img src="https://media.giphy.com/media/26uf759LlDftqZNVm/giphy.gif" width="300" alt="Análisis IA"><br>
+<strong>🧠 Análisis de IA</strong><br>
+<em>Identifica ingredientes automáticamente</em>
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="https://media.giphy.com/media/l0HlPKs7G0cRSWFj2/giphy.gif" width="300" alt="Videos Tutorial"><br>
+<strong>🎬 Videos Tutoriales</strong><br>
+<em>Aprende paso a paso cada receta</em>
+</td>
+<td align="center">
+<img src="https://media.giphy.com/media/26u4cBF8R1DhImYH6/giphy.gif" width="300" alt="Sincronización"><br>
+<strong>☁️ Sincronización</strong><br>
+<em>Tus recetas siempre disponibles</em>
+</td>
+</tr>
+</table>
+
+### 🏆 ¿Por qué SaborRegional?
+
+<div align="center">
+<img src="https://media.giphy.com/media/3o7aD5w27p1M0rHj2w/giphy.gif" width="400" alt="Cooking Magic">
+
+**"Conectando tradiciones culinarias con tecnología moderna"**
+
+🎯 **Fácil de usar** | 🌟 **Contenido auténtico** | 🚀 **Tecnología avanzada**
+</div>
+
+</div>
 
 ## 🤝 Contribuir
 
