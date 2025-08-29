@@ -1,7 +1,7 @@
 import PocketBase from 'pocketbase';
 
-// Configuración de PocketBase - usar 10.0.2.2 para emulador Android
-const pb = new PocketBase('http://10.0.2.2:8090');
+// Configuración de PocketBase
+const pb = new PocketBase('http://127.0.0.1:8090');
 
 // Inicializar PocketBase
 export const initializePocketBase = async () => {

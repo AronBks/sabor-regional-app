@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, Linking, Alert, ActivityIndicator } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { Switch } from 'react-native';
-import { AuthScreen } from './components/AuthScreen';
-import { useAuth } from './src/hooks/useAuth';
+import SimpleLogin from './components/SimpleLogin';
 import { IngredientAnalysisService } from './src/services/ingredientAnalysis';
-import { analysisService } from './src/pocketbase';
+import { analysisService, initializePocketBase } from './src/pocketbase';
+import { userRecipeService } from './src/userRecipeService';
+import simpleAuthService from './src/simpleAuth';
 
 // Configuración de imágenes usando URLs alternativas que funcionan
 const IMAGENES_RECETAS = {
@@ -467,45 +468,11 @@ const PREFERENCIAS: { key: string; label: string }[] = [
 ];
 
 const App = () => {
-  // Estados para el modo de autenticación
-  const [authMode, setAuthMode] = useState<'demo' | 'pocketbase' | 'selecting'>('selecting');
-  const [fallbackUser, setFallbackUser] = useState<any>(null);
-  const [fallbackLoading, setFallbackLoading] = useState(false);
-  const [pocketbaseError, setPocketbaseError] = useState<string | null>(null);
-  
-  // Hook de autenticación solo cuando se necesita
-  let authHookData = null;
-  
-  // Solo usar useAuth si estamos en modo PocketBase
-  if (authMode === 'pocketbase') {
-    try {
-      authHookData = useAuth();
-      // Si llegamos aquí, PocketBase funciona correctamente
-      if (pocketbaseError) {
-        setPocketbaseError(null);
-      }
-    } catch (error) {
-      console.error('Error con useAuth:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error de conexión con PocketBase';
-      setPocketbaseError(errorMessage);
-      // No cambiar de modo automáticamente, dejar que el usuario decida
-    }
-  }
-  
-  // Determinar qué datos de auth usar
-  const authData = authMode === 'pocketbase' && authHookData && !pocketbaseError 
-    ? authHookData 
-    : {
-        user: fallbackUser,
-        loading: fallbackLoading,
-        isAuthenticated: !!fallbackUser,
-        logout: async () => {
-          setFallbackUser(null);
-          setAuthMode('selecting');
-        }
-      };
-  
-  const { user, loading, isAuthenticated, logout } = authData;
+  // Estados de autenticación simplificados
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userFavorites, setUserFavorites] = useState<any[]>([]);
+  const [isRecipeFavorite, setIsRecipeFavorite] = useState(false);
   
   // Estados de navegación y UI existentes
   const [region, setRegion] = useState<'Todas' | string>('Todas');
@@ -516,6 +483,27 @@ const App = () => {
   >(null);
   const [activeTab, setActiveTab] = useState('ingredientes');
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
+  
+  // Inicializar PocketBase al cargar la app
+  useEffect(() => {
+    const setupPocketBase = async () => {
+      try {
+        await initializePocketBase();
+        console.log('PocketBase inicializado correctamente');
+        
+        // Verificar si hay una sesión activa
+        const currentSession = await simpleAuthService.getCurrentUser();
+        if (currentSession && currentSession.id) {
+          setCurrentUser(currentSession);
+          setIsLoggedIn(true);
+          console.log('Usuario ya autenticado:', currentSession.name);
+        }
+      } catch (error) {
+        console.error('Error inicializando PocketBase:', error);
+      }
+    };
+    setupPocketBase();
+  }, []);
   
   // Limpiar checkboxes cuando se selecciona una nueva receta
   useEffect(() => {
@@ -541,11 +529,33 @@ const App = () => {
   ];
   const [ingredientesFavoritos, setIngredientesFavoritos] = React.useState<string[]>([]);
 
+  // Función para manejar login exitoso
+  const handleLogin = async (user: any) => {
+    setCurrentUser(user);
+    setIsLoggedIn(true);
+    setNav('inicio');
+    console.log('Login exitoso:', user.name);
+    
+    // Cargar favoritos del usuario
+    try {
+      const result = await userRecipeService.getUserFavorites(user.id);
+      if (result.success && result.favorites) {
+        setUserFavorites(result.favorites);
+      }
+    } catch (error) {
+      console.error('Error cargando favoritos:', error);
+    }
+  };
+
   // Función para cerrar sesión
   const handleLogout = async () => {
     try {
-      await logout();
+      await simpleAuthService.logout();
+      setCurrentUser(null);
+      setIsLoggedIn(false);
+      setUserFavorites([]);
       setNav('inicio');
+      Alert.alert('Sesión cerrada', 'Has cerrado sesión correctamente');
     } catch (error) {
       Alert.alert('Error', 'No se pudo cerrar sesión');
     }
@@ -561,27 +571,89 @@ const App = () => {
 
   // Cargar historial de análisis cuando el usuario se autentica
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isLoggedIn && currentUser) {
       loadAnalysisHistory();
     }
-  }, [isAuthenticated, user]);
+  }, [isLoggedIn, currentUser]);
 
   const loadAnalysisHistory = async () => {
-    if (!user) return;
+    if (!currentUser) return;
     
     try {
-      const result = await analysisService.getAnalysisHistory(user.id, 5);
-      if (result.success && result.analyses) {
-        setAnalysisHistory(result.analyses);
+      const result = await analysisService.getUserAnalysisHistory(currentUser.id);
+      if (result.success && result.data) {
+        setAnalysisHistory(result.data);
       }
     } catch (error) {
       console.error('Error cargando historial:', error);
+    }
+  }; // <-- Add this closing brace
+
+  // Cargar favoritos cuando se selecciona una receta
+  useEffect(() => {
+    if (currentUser && selectedRecipe) {
+      checkIfFavorite(currentUser.id, selectedRecipe.id);
+      // Registrar que el usuario vio esta receta
+      userRecipeService.logRecipeView(currentUser.id, selectedRecipe.id, selectedRecipe.nombre);
+    }
+  }, [currentUser, selectedRecipe]);
+
+  // Funciones para manejar favoritos
+  const loadUserFavorites = async (userId: string) => {
+    try {
+      const result = await userRecipeService.getUserFavorites(userId);
+      if (result.success) {
+        setUserFavorites(result.favorites || []);
+      }
+    } catch (error) {
+      console.error('Error cargando favoritos:', error);
+    }
+  };
+
+  const checkIfFavorite = async (userId: string, recipeId: number) => {
+    try {
+      const result = await userRecipeService.isFavorite(userId, recipeId);
+      setIsRecipeFavorite(result.isFavorite);
+    } catch (error) {
+      console.error('Error verificando favorito:', error);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    if (!currentUser || !selectedRecipe) {
+      Alert.alert('Error', 'Debes iniciar sesión para guardar favoritos');
+      return;
+    }
+
+    try {
+      if (isRecipeFavorite) {
+        const result = await userRecipeService.removeFromFavorites(currentUser.id, selectedRecipe.id);
+        if (result.success) {
+          setIsRecipeFavorite(false);
+          loadUserFavorites(currentUser.id);
+          Alert.alert('Éxito', 'Receta removida de favoritos');
+        }
+      } else {
+        const result = await userRecipeService.addToFavorites(
+          currentUser.id, 
+          selectedRecipe.id, 
+          selectedRecipe.nombre, 
+          selectedRecipe.region
+        );
+        if (result.success) {
+          setIsRecipeFavorite(true);
+          loadUserFavorites(currentUser.id);
+          Alert.alert('Éxito', 'Receta agregada a favoritos');
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo actualizar favoritos');
     }
   };
 
   // Función para simular análisis de imagen
   const handleImageAnalysis = async () => {
-    if (!user) return;
+    if (!currentUser) return;
     
     setAnalysisLoading(true);
     
@@ -589,7 +661,7 @@ const App = () => {
       // Simular URI de imagen (en producción vendría de la cámara/galería)
       const mockImageUri = 'data:image/jpeg;base64,mock_image_data';
       
-      const result = await IngredientAnalysisService.analyzeImage(mockImageUri, user.id);
+      const result = await IngredientAnalysisService.analyzeImage(mockImageUri, currentUser.id);
       
       if (result.success && result.ingredients) {
         setDetectedIngredients(result.ingredients);
@@ -606,105 +678,14 @@ const App = () => {
     }
   };
 
-  // Mostrar pantalla de carga
-  if (loading) {
-    return (
-      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#ff6a00" />
-        <Text style={{ marginTop: 16, color: '#666' }}>Cargando...</Text>
-      </SafeAreaView>
-    );
-  }
+  // Funciones para manejo de dificultad y restricciones
+  const toggleDifficulty = (key: 'facil' | 'intermedio' | 'avanzado') => {
+    setDifficulty(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
-  // Mostrar pantalla de selección de modo si está en 'selecting'
-  if (authMode === 'selecting') {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#ff6a00' }}>
-            🍽️ Recetas App
-          </Text>
-          
-          <Text style={{ fontSize: 16, textAlign: 'center', marginBottom: 30, color: '#666' }}>
-            Elige cómo quieres usar la aplicación:
-          </Text>
-          
-          <TouchableOpacity 
-            onPress={() => {
-              console.log('Intentando conectar con PocketBase...');
-              setAuthMode('pocketbase');
-            }}
-            style={{ backgroundColor: '#ff6a00', padding: 15, borderRadius: 10, width: '100%', marginBottom: 15 }}
-          >
-            <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
-              🗄️ Usar PocketBase (Base de Datos Real)
-            </Text>
-            <Text style={{ color: 'white', textAlign: 'center', fontSize: 12, marginTop: 5 }}>
-              Guarda tus datos permanentemente
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            onPress={() => {
-              console.log('Usando modo demo...');
-              setFallbackUser({ id: 'demo-123', email: 'demo@test.com', name: 'Usuario Demo' });
-              setAuthMode('demo');
-            }}
-            style={{ backgroundColor: '#666', padding: 15, borderRadius: 10, width: '100%' }}
-          >
-            <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
-              🚀 Modo Demo (Sin Base de Datos)
-            </Text>
-            <Text style={{ color: 'white', textAlign: 'center', fontSize: 12, marginTop: 5 }}>
-              Prueba la app sin configurar nada
-            </Text>
-          </TouchableOpacity>
-          
-          {pocketbaseError && (
-            <View style={{ marginTop: 20, padding: 15, backgroundColor: '#ffeeee', borderRadius: 8, borderWidth: 1, borderColor: '#ffcccc' }}>
-              <Text style={{ color: '#cc0000', textAlign: 'center', fontSize: 14, fontWeight: 'bold', marginBottom: 5 }}>
-                ⚠️ Problema con PocketBase
-              </Text>
-              <Text style={{ color: '#cc0000', textAlign: 'center', fontSize: 12 }}>
-                {pocketbaseError}
-              </Text>
-              <Text style={{ color: '#666', textAlign: 'center', fontSize: 11, marginTop: 5 }}>
-                Verifica que PocketBase esté ejecutándose en http://127.0.0.1:8090
-              </Text>
-            </View>
-          )}
-          
-          <Text style={{ fontSize: 12, textAlign: 'center', marginTop: 20, color: '#888' }}>
-            Para PocketBase: Asegúrate de tener el servidor en http://127.0.0.1:8090
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Mostrar pantalla de autenticación si no está logueado (solo para modo PocketBase)
-  if (authMode === 'pocketbase' && !isAuthenticated) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <TouchableOpacity 
-            onPress={() => setAuthMode('selecting')}
-            style={{ position: 'absolute', top: 50, left: 20, backgroundColor: '#eee', padding: 10, borderRadius: 5 }}
-          >
-            <Text style={{ color: '#666' }}>← Volver</Text>
-          </TouchableOpacity>
-          
-          <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#ff6a00' }}>
-            🔐 Autenticación PocketBase
-          </Text>
-          
-          <AuthScreen onAuthSuccess={(userData) => {
-            console.log('Usuario autenticado:', userData);
-          }} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const toggleRestriccion = (r: string) => {
+    setSelectedRestricciones(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]);
+  };
 
   const recetasFiltradas = region === 'Todas' ? RECETAS : RECETAS.filter(r => r.region === region);
 
@@ -758,8 +739,24 @@ const App = () => {
         </View>
         
         {/* Título y descripción */}
-        <Text style={styles.detailRecipeTitle}>{recipe.nombre}</Text>
-        <Text style={styles.detailDescription}>{recipe.descripcion}</Text>
+        <View style={styles.titleContainer}>
+          <View style={styles.titleSection}>
+            <Text style={styles.detailRecipeTitle}>{recipe.nombre}</Text>
+            <Text style={styles.detailDescription}>{recipe.descripcion}</Text>
+          </View>
+          
+          {/* Botón de favoritos */}
+          {currentUser && (
+            <TouchableOpacity 
+              style={[styles.favoriteButton, { backgroundColor: isRecipeFavorite ? regionColor : '#f0f0f0' }]}
+              onPress={toggleFavorite}
+            >
+              <Text style={[styles.favoriteIcon, { color: isRecipeFavorite ? '#fff' : regionColor }]}>
+                {isRecipeFavorite ? '❤️' : '🤍'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
         
         {/* Tabs de navegación */}
         <View style={styles.tabsRow}>
@@ -911,44 +908,215 @@ const App = () => {
                 </Text>
               </View>
               
+              {/* Galería de Imágenes de Comida */}
+              <View style={styles.foodGalleryContainer}>
+                <Text style={[styles.sectionTitleNew, { color: regionColor }]}>
+                  📸 Galería de Imágenes
+                </Text>
+                <Text style={styles.sectionSubtitle}>
+                  Explora visualmente cada detalle de {recipe.nombre}
+                </Text>
+                
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galleryScrollContainer}>
+                  {/* Imagen del Plato Principal */}
+                  <View style={[styles.galleryItem, { borderColor: regionColor }]}>
+                    <Image 
+                      source={IMAGENES_RECETAS[recipe.id] || IMAGENES_RECETAS[1]}
+                      style={styles.galleryMainImage}
+                    />
+                    <Text style={[styles.galleryLabel, { color: regionColor }]}>🍽️ Plato Principal</Text>
+                  </View>
+                  
+                  {/* Imagen de Ingredientes */}
+                  <View style={[styles.galleryItem, { borderColor: regionColor }]}>
+                    <Image 
+                      source={{ uri: 'https://images.unsplash.com/photo-1506368249639-73a05d6f6488?w=300&h=200&fit=crop' }}
+                      style={styles.galleryMainImage}
+                    />
+                    <Text style={[styles.galleryLabel, { color: regionColor }]}>🥕 Ingredientes</Text>
+                  </View>
+                  
+                  {/* Imagen del Proceso */}
+                  <View style={[styles.galleryItem, { borderColor: regionColor }]}>
+                    <Image 
+                      source={{ uri: 'https://images.unsplash.com/photo-1556909114-4f5c8cf8d05e?w=300&h=200&fit=crop' }}
+                      style={styles.galleryMainImage}
+                    />
+                    <Text style={[styles.galleryLabel, { color: regionColor }]}>👨‍� Preparación</Text>
+                  </View>
+                  
+                  {/* Imagen del Resultado */}
+                  <View style={[styles.galleryItem, { borderColor: regionColor }]}>
+                    <Image 
+                      source={{ uri: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop' }}
+                      style={styles.galleryMainImage}
+                    />
+                    <Text style={[styles.galleryLabel, { color: regionColor }]}>✨ Resultado Final</Text>
+                  </View>
+                </ScrollView>
+              </View>
+
               {(() => {
-                const videoIds = [
-                  'dQw4w9WgXcQ', 'jNQXAC9IVRw', 'ZZ5LpwO-An4', 'tgbNymZ7vqY',
-                  'hT_nvWreIhg', '8UVNT4wvIGY', 'Gc2en3nHxA4', '4fndeDfaWCg'
-                ];
-                const videoId = videoIds[recipe.id % videoIds.length];
-                const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+                // Videos específicos por región y tipo de receta
+                const videoLibrary = {
+                  // Videos de Región Andina
+                  1: { id: 'kpZx53kkslw', title: 'Arepas de Maíz Tradicionales', views: '15.2K', likes: '97%', duration: '8:45', chef: 'Chef María' },
+                  2: { id: 'dQw4w9WgXcQ', title: 'Papa Rellena Peruana Auténtica', views: '28.5K', likes: '96%', duration: '12:30', chef: 'Chef Carlos' },
+                  3: { id: 'jNQXAC9IVRw', title: 'Empanadas Andinas Caseras', views: '9.8K', likes: '94%', duration: '15:20', chef: 'Chef Ana' },
+                  
+                  // Videos de Región Costa
+                  4: { id: 'ZZ5LpwO-An4', title: 'Ceviche Peruano Tradicional', views: '45.3K', likes: '98%', duration: '6:15', chef: 'Chef Ricardo' },
+                  5: { id: 'tgbNymZ7vqY', title: 'Arroz con Mariscos Costeño', views: '32.7K', likes: '95%', duration: '18:40', chef: 'Chef Isabel' },
+                  6: { id: 'hT_nvWreIhg', title: 'Pescado Frito Estilo Costa', views: '12.1K', likes: '93%', duration: '10:25', chef: 'Chef Miguel' },
+                  
+                  // Videos de Región Amazónica
+                  7: { id: '8UVNT4wvIGY', title: 'Tacacho con Cecina Amazónico', views: '18.9K', likes: '96%', duration: '14:15', chef: 'Chef Rosa' },
+                  8: { id: 'Gc2en3nHxA4', title: 'Juane de Pollo Tradicional', views: '21.4K', likes: '97%', duration: '16:30', chef: 'Chef Fernando' },
+                  9: { id: '4fndeDfaWCg', title: 'Patarashca de Pescado', views: '8.7K', likes: '94%', duration: '11:50', chef: 'Chef Luisa' },
+                  10: { id: 'Lrj2Hq7xqQ8', title: 'Inchicapi de Gallina', views: '13.6K', likes: '95%', duration: '19:20', chef: 'Chef Pedro' },
+                  11: { id: 'M5V_IXMewls', title: 'Rocoto Relleno Arequipeño', views: '25.8K', likes: '98%', duration: '13:45', chef: 'Chef Carmen' },
+                  
+                  // Videos de Región Pampa
+                  12: { id: 'BaW_jenozKc', title: 'Asado de Tira Argentino', views: '38.2K', likes: '97%', duration: '22:15', chef: 'Chef Eduardo' },
+                  13: { id: 'fJ9rUzIMcZQ', title: 'Empanadas de Carne Jugosas', views: '29.3K', likes: '96%', duration: '17:30', chef: 'Chef Mónica' },
+                  14: { id: 'dQw4w9WgXcQ', title: 'Locro de Zapallo Cremoso', views: '16.7K', likes: '94%', duration: '14:40', chef: 'Chef Alberto' },
+                  
+                  // Videos de Región Altiplano
+                  15: { id: 'jNQXAC9IVRw', title: 'Chairo Paceño Tradicional', views: '11.9K', likes: '95%', duration: '20:10', chef: 'Chef Elena' },
+                  16: { id: 'ZZ5LpwO-An4', title: 'Charquekan Potosino', views: '8.4K', likes: '93%', duration: '16:25', chef: 'Chef Raúl' },
+                  17: { id: 'tgbNymZ7vqY', title: 'Jaka Lawa de Quinua', views: '7.2K', likes: '96%', duration: '12:55', chef: 'Chef Sandra' }
+                };
+                
+                const videoData = videoLibrary[recipe.id] || videoLibrary[1];
+                const thumbnail = `https://img.youtube.com/vi/${videoData.id}/maxresdefault.jpg`;
                 
                 return (
-                  <View style={[styles.videoContainer, { backgroundColor: '#fff' }]}>
-                    <TouchableOpacity
-                      style={styles.videoThumbnailContainer}
-                      onPress={() => {
-                        const url = `https://www.youtube.com/watch?v=${videoId}`;
-                        Linking.openURL(url).catch(err => console.error('Error al abrir video:', err));
-                      }}
-                    >
-                      <View style={styles.videoWrapper}>
-                        <Image source={{ uri: thumbnail }} style={styles.videoThumbnail} />
-                        <View style={styles.playButtonOverlay}>
-                          <View style={[styles.playButtonCircle, { backgroundColor: regionColor }]}>
-                            <Text style={styles.playButton}>▶️</Text>
+                  <View>
+                    {/* Video Principal con Marco Atractivo */}
+                    <View style={[styles.videoContainer, { backgroundColor: '#fff' }]}>
+                      <View style={[styles.videoFrame, { borderColor: regionColor }]}>
+                        <TouchableOpacity
+                          style={styles.videoThumbnailContainer}
+                          onPress={() => {
+                            const url = `https://www.youtube.com/watch?v=${videoData.id}`;
+                            Linking.openURL(url).catch(err => console.error('Error al abrir video:', err));
+                          }}
+                        >
+                          <View style={styles.videoWrapper}>
+                            <Image source={{ uri: thumbnail }} style={styles.videoThumbnail} />
+                            <View style={styles.playButtonOverlay}>
+                              <View style={[styles.playButtonCircle, { backgroundColor: regionColor }]}>
+                                <Text style={styles.playButton}>▶️</Text>
+                              </View>
+                            </View>
+                            <View style={styles.videoDurationBadge}>
+                              <Text style={styles.videoDurationText}>{videoData.duration}</Text>
+                            </View>
+                            {/* Efecto de Brillo */}
+                            <View style={styles.videoShineEffect}></View>
                           </View>
+                        </TouchableOpacity>
+                      </View>
+                      
+                      <View style={styles.videoInfo}>
+                        <Text style={styles.videoTitle}>
+                          {videoData.title}
+                        </Text>
+                        <View style={styles.chefInfo}>
+                          <Text style={[styles.chefName, { color: regionColor }]}>👨‍🍳 {videoData.chef}</Text>
+                          <Text style={styles.uploadDate}>• Hace 2 días</Text>
+                        </View>
+                        <Text style={styles.videoDescription}>
+                          Video paso a paso para preparar esta deliciosa receta tradicional de {recipe.region}. 
+                          Aprende los secretos y técnicas tradicionales que han pasado de generación en generación.
+                        </Text>
+                        <View style={styles.videoStats}>
+                          <Text style={[styles.videoStat, { color: regionColor }]}>👀 {videoData.views} vistas</Text>
+                          <Text style={[styles.videoStat, { color: regionColor }]}>👍 {videoData.likes} likes</Text>
+                          <Text style={[styles.videoStat, { color: regionColor }]}>⏱️ {videoData.duration}</Text>
+                        </View>
+                        
+                        {/* Botones de Acción */}
+                        <View style={styles.videoActions}>
+                          <TouchableOpacity style={[styles.actionButton, { backgroundColor: regionColor + '15' }]}>
+                            <Text style={[styles.actionButtonText, { color: regionColor }]}>👍 Me gusta</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity style={[styles.actionButton, { backgroundColor: regionColor + '15' }]}>
+                            <Text style={[styles.actionButtonText, { color: regionColor }]}>💾 Guardar</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity style={[styles.actionButton, { backgroundColor: regionColor + '15' }]}>
+                            <Text style={[styles.actionButtonText, { color: regionColor }]}>📤 Compartir</Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
-                    </TouchableOpacity>
+                    </View>
                     
-                    <View style={styles.videoInfo}>
-                      <Text style={styles.videoTitle}>
-                        Tutorial: {recipe.nombre}
+                    {/* Galería de Imágenes de Comida */}
+                    <View style={styles.foodGallerySection}>
+                      <Text style={[styles.sectionTitleNew, { color: regionColor }]}>
+                        📸 Galería de Imágenes
                       </Text>
-                      <Text style={styles.videoDescription}>
-                        Video paso a paso para preparar esta deliciosa receta tradicional de {recipe.region}.
+                      <Text style={styles.sectionSubtitle}>
+                        Explora visualmente cada paso y resultado
                       </Text>
-                      <View style={styles.videoStats}>
-                        <Text style={[styles.videoStat, { color: regionColor }]}>👀 2.3K vistas</Text>
-                        <Text style={[styles.videoStat, { color: regionColor }]}>👍 95% likes</Text>
-                        <Text style={[styles.videoStat, { color: regionColor }]}>⏱ 12:34 min</Text>
+                      
+                      <View style={styles.foodGalleryGrid}>
+                        {/* Fila 1 */}
+                        <View style={styles.galleryRow}>
+                          <TouchableOpacity style={[styles.foodGalleryItem, { borderColor: regionColor + '40' }]}>
+                            <Image 
+                              source={IMAGENES_RECETAS[recipe.id] || IMAGENES_RECETAS[1]}
+                              style={styles.foodGalleryImage}
+                            />
+                            <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
+                              <Text style={styles.imageOverlayText}>Plato Terminado</Text>
+                            </View>
+                          </TouchableOpacity>
+                          
+                          <TouchableOpacity style={[styles.foodGalleryItem, { borderColor: regionColor + '40' }]}>
+                            <Image 
+                              source={{ uri: 'https://images.unsplash.com/photo-1506368249639-73a05d6f6488?w=300&h=200&fit=crop' }}
+                              style={styles.foodGalleryImage}
+                            />
+                            <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
+                              <Text style={styles.imageOverlayText}>Ingredientes Frescos</Text>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                        
+                        {/* Fila 2 */}
+                        <View style={styles.galleryRow}>
+                          <TouchableOpacity style={[styles.foodGalleryItem, { borderColor: regionColor + '40' }]}>
+                            <Image 
+                              source={{ uri: 'https://images.unsplash.com/photo-1556909114-4f5c8cf8d05e?w=300&h=200&fit=crop' }}
+                              style={styles.foodGalleryImage}
+                            />
+                            <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
+                              <Text style={styles.imageOverlayText}>Proceso de Cocción</Text>
+                            </View>
+                          </TouchableOpacity>
+                          
+                          <TouchableOpacity style={[styles.foodGalleryItem, { borderColor: regionColor + '40' }]}>
+                            <Image 
+                              source={{ uri: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop' }}
+                              style={styles.foodGalleryImage}
+                            />
+                            <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
+                              <Text style={styles.imageOverlayText}>Presentación Final</Text>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                        
+                        {/* Fila 3 - Panorámica */}
+                        <TouchableOpacity style={[styles.foodGalleryItemWide, { borderColor: regionColor + '40' }]}>
+                          <Image 
+                            source={{ uri: 'https://images.unsplash.com/photo-1574781330855-d0db3293032e?w=600&h=250&fit=crop' }}
+                            style={styles.foodGalleryImageWide}
+                          />
+                          <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
+                            <Text style={styles.imageOverlayText}>Vista Panorámica de la Mesa</Text>
+                          </View>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </View>
@@ -1101,6 +1269,11 @@ const App = () => {
   const renderScreen = () => {
     switch (nav) {
       case 'inicio':
+        // Si no está logueado, mostrar el componente de login
+        if (!isLoggedIn) {
+          return <SimpleLogin onLogin={handleLogin} />;
+        }
+        
         if (selectedRecipe) {
           return renderRecipeDetail(selectedRecipe);
         }
@@ -1705,23 +1878,41 @@ const App = () => {
           </ScrollView>
         );
       case 'perfil':
-  // Mostrar panel de Perfil incluso si no hay usuario: el usuario podrá usar las preferencias como invitado
-        // Logged-in profile: show preferences, restricciones and historial simplified
-        // toggleDifficulty and toggleRestriccion use top-level state
-        const toggleDifficulty = (key: 'facil' | 'intermedio' | 'avanzado') => {
-          setDifficulty(prev => ({ ...prev, [key]: !prev[key] }));
-        };
+        // Si no está logueado, mostrar el componente de login
+        if (!isLoggedIn) {
+          return <SimpleLogin onLogin={handleLogin} />;
+        }
 
-        const toggleRestriccion = (r: string) => {
-          setSelectedRestricciones(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]);
-        };
-
+        // Si está logueado, mostrar el perfil completo
         return (
           <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40, backgroundColor: '#fff' }}>
+            {/* Header del usuario */}
+            <View style={{ backgroundColor: '#FF7F50', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 4 }}>
+                    ¡Hola {currentUser?.name}! 👋
+                  </Text>
+                  <Text style={{ fontSize: 16, color: '#fff', opacity: 0.9 }}>
+                    {currentUser?.email}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: '#fff', opacity: 0.8, marginTop: 8 }}>
+                    🍽️ {userFavorites.length} recetas favoritas
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={handleLogout}
+                  style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 8 }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>Cerrar sesión</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* Ingredientes favoritos */}
             <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#f0f0f0', marginBottom: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                <Text style={{ fontSize: 22, color: '#218c4a', marginRight: 8 }}>ψq</Text>
+                <Text style={{ fontSize: 22, color: '#218c4a', marginRight: 8 }}>🥘</Text>
                 <Text style={{ fontWeight: '700', fontSize: 18 }}>Ingredientes favoritos</Text>
               </View>
               <Text style={{ color: '#666', fontSize: 14, marginBottom: 12 }}>
@@ -1828,60 +2019,17 @@ const App = () => {
               
               {/* Switches de restricciones */}
               <View style={{ gap: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>Sin gluten</Text>
-                  <Switch
-                    value={selectedRestricciones.includes('Sin gluten')}
-                    onValueChange={() => toggleRestriccion('Sin gluten')}
-                    trackColor={{ false: '#e0e0e0', true: '#ff6a00' }}
-                    thumbColor={selectedRestricciones.includes('Sin gluten') ? '#fff' : '#f4f3f4'}
-                  />
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>Vegetariano</Text>
-                  <Switch
-                    value={selectedRestricciones.includes('Vegetariano')}
-                    onValueChange={() => toggleRestriccion('Vegetariano')}
-                    trackColor={{ false: '#e0e0e0', true: '#ff6a00' }}
-                    thumbColor={selectedRestricciones.includes('Vegetariano') ? '#fff' : '#f4f3f4'}
-                  />
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>Vegano</Text>
-                  <Switch
-                    value={selectedRestricciones.includes('Vegano')}
-                    onValueChange={() => toggleRestriccion('Vegano')}
-                    trackColor={{ false: '#e0e0e0', true: '#ff6a00' }}
-                    thumbColor={selectedRestricciones.includes('Vegano') ? '#fff' : '#f4f3f4'}
-                  />
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>Sin lactosa</Text>
-                  <Switch
-                    value={selectedRestricciones.includes('Sin lactosa')}
-                    onValueChange={() => toggleRestriccion('Sin lactosa')}
-                    trackColor={{ false: '#e0e0e0', true: '#ff6a00' }}
-                    thumbColor={selectedRestricciones.includes('Sin lactosa') ? '#fff' : '#f4f3f4'}
-                  />
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>Keto</Text>
-                  <Switch
-                    value={selectedRestricciones.includes('Keto')}
-                    onValueChange={() => toggleRestriccion('Keto')}
-                    trackColor={{ false: '#e0e0e0', true: '#ff6a00' }}
-                    thumbColor={selectedRestricciones.includes('Keto') ? '#fff' : '#f4f3f4'}
-                  />
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>Paleo</Text>
-                  <Switch
-                    value={selectedRestricciones.includes('Paleo')}
-                    onValueChange={() => toggleRestriccion('Paleo')}
-                    trackColor={{ false: '#e0e0e0', true: '#ff6a00' }}
-                    thumbColor={selectedRestricciones.includes('Paleo') ? '#fff' : '#f4f3f4'}
-                  />
-                </View>
+                {RESTRICCIONES.map(restriccion => (
+                  <View key={restriccion} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>{restriccion}</Text>
+                    <Switch
+                      value={selectedRestricciones.includes(restriccion)}
+                      onValueChange={() => toggleRestriccion(restriccion)}
+                      trackColor={{ false: '#e0e0e0', true: '#ff6a00' }}
+                      thumbColor={selectedRestricciones.includes(restriccion) ? '#fff' : '#f4f3f4'}
+                    />
+                  </View>
+                ))}
               </View>
               
               {/* Restricciones activas */}
@@ -1906,7 +2054,7 @@ const App = () => {
               <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 0 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ fontSize: 18, marginRight: 12 }}>♡</Text>
-                  <Text>Favoritos</Text>
+                  <Text>Favoritos ({userFavorites.length})</Text>
                 </View>
                 <Text style={{ color: '#999' }}>›</Text>
               </TouchableOpacity>
@@ -1919,20 +2067,6 @@ const App = () => {
                 <Text style={{ color: '#999' }}>›</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity onPress={handleLogout} style={{ backgroundColor: '#ff8a65', padding: 14, borderRadius: 10, alignItems: 'center', marginBottom: 10 }}>
-              <Text style={{ color: '#fff', fontWeight: '700' }}>Cerrar sesión</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              onPress={() => {
-                setAuthMode('selecting');
-                setFallbackUser(null);
-              }} 
-              style={{ backgroundColor: '#666', padding: 14, borderRadius: 10, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700' }}>Cambiar modo de conexión</Text>
-            </TouchableOpacity>
           </ScrollView>
         );
       default:
@@ -1983,9 +2117,6 @@ const App = () => {
     </SafeAreaView>
   );
 };
-
-export default App;
-// ...styles and helpers are defined above in the file (kept as-is)
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
@@ -2133,7 +2264,35 @@ const styles = StyleSheet.create({
   detailInfoRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, marginLeft: 20 },
   detailTag: { backgroundColor: '#ffe5b4', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginRight: 8, fontSize: 13, color: '#a85' },
   detailInfo: { fontSize: 15, color: '#555', marginRight: 10 },
-  detailRecipeTitle: { fontSize: 20, fontWeight: 'bold', color: '#222', marginLeft: 20, marginTop: 12, marginBottom: 8 },
+  detailRecipeTitle: { fontSize: 20, fontWeight: 'bold', color: '#222', marginTop: 12, marginBottom: 8 },
+  
+  // Estilos para favoritos y título
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  titleSection: {
+    flex: 1,
+    marginRight: 10,
+  },
+  favoriteButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  favoriteIcon: {
+    fontSize: 24,
+  },
   tabsRow: { 
     flexDirection: 'row', 
     marginHorizontal: 16, 
@@ -3019,6 +3178,213 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
+  // Nuevos estilos para video mejorado
+  videoDurationBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  
+  videoDurationText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  
+  chefInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  
+  chefName: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  
+  uploadDate: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  
+  videoActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  
+  actionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  
+  actionButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  
+  relatedVideosSection: {
+    marginTop: 20,
+    paddingHorizontal: 15,
+  },
+  
+  relatedVideoItem: {
+    flexDirection: 'row',
+    marginBottom: 15,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  
+  relatedVideoThumbnail: {
+    position: 'relative',
+  },
+  
+  relatedVideoImage: {
+    width: 120,
+    height: 70,
+  },
+  
+  relatedVideoDuration: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  
+  relatedVideoDurationText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  
+  relatedVideoInfo: {
+    flex: 1,
+    padding: 10,
+    justifyContent: 'space-between',
+  },
+  
+  relatedVideoTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    lineHeight: 16,
+  },
+  
+  relatedVideoChef: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 2,
+  },
+  
+  relatedVideoStats: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 4,
+  },
+  
+  // Estilos para galería de imágenes de comida
+  foodGalleryContainer: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+  },
+  
+  galleryScrollContainer: {
+    marginTop: 15,
+  },
+  
+  galleryMainImage: {
+    width: 150,
+    height: 100,
+    borderRadius: 8,
+  },
+  
+  foodGallerySection: {
+    marginTop: 20,
+    paddingHorizontal: 15,
+  },
+  
+  foodGalleryGrid: {
+    marginTop: 15,
+  },
+  
+  galleryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  
+  foodGalleryItem: {
+    flex: 1,
+    marginHorizontal: 5,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  
+  foodGalleryImage: {
+    width: '100%',
+    height: 120,
+  },
+  
+  foodGalleryItemWide: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  
+  foodGalleryImageWide: {
+    width: '100%',
+    height: 150,
+  },
+  
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 8,
+  },
+  
+  imageOverlayText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  
   nutritionCardMain: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -3157,4 +3523,137 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
   },
+
+  // Nuevos estilos para galería visual
+  visualGallery: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 15,
+    margin: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  galleryScroll: {
+    flexDirection: 'row',
+  },
+
+  galleryItem: {
+    width: 120,
+    height: 140,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginRight: 15,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  galleryGif: {
+    width: '100%',
+    height: 100,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+
+  galleryLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    padding: 8,
+  },
+
+  // Estilos para sección de inspiración
+  inspirationSection: {
+    borderRadius: 12,
+    padding: 20,
+    margin: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  inspirationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+
+  inspirationGrid: {
+    gap: 10,
+  },
+
+  inspirationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+
+  inspirationCard: {
+    width: '48%',
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
+  inspirationImage: {
+    width: '100%',
+    height: 80,
+  },
+
+  inspirationCardTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+
+  inspirationCardDesc: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+
+  // Mejorar el marco del video
+  videoFrame: {
+    borderRadius: 16,
+    borderWidth: 3,
+    padding: 4,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+
+  videoShineEffect: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
 });
+
+export default App;
