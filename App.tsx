@@ -475,7 +475,8 @@ const App = () => {
       // Si hay usuario autenticado, cargar recetas filtradas por preferencias
       if (currentUser && currentUser.preferences) {
         console.log('Cargando recetas con preferencias del usuario:', currentUser.preferences);
-        recetasFromDB = await recetasService.obtenerRecetasPorPreferencias(currentUser.preferences);
+        // Comentado temporalmente - usar solo recetas hardcodeadas
+        // recetasFromDB = await recetasService.obtenerRecetasPorPreferencias(currentUser.preferences);
       } else {
         // Si no hay usuario o preferencias, cargar todas las recetas
         recetasFromDB = await recetasService.obtenerTodasLasRecetas();
@@ -495,6 +496,33 @@ const App = () => {
   // Variable combinada para usar en la app
   const RECETAS_ACTIVAS = recetasPB.length > 0 ? recetasPB : RECETAS;
   
+  // Función para obtener ingredientes hardcodeados (siempre funcionan)
+  const getRecipeIngredients = (recipe: any) => {
+    // Buscar la receta hardcodeada por ID o nombre
+    const recetaHardcoded = RECETAS.find(r => 
+      r.id === parseInt(recipe.id) || 
+      r.nombre.toLowerCase() === recipe.nombre?.toLowerCase()
+    );
+    
+    if (recetaHardcoded && recetaHardcoded.ingredientes) {
+      return recetaHardcoded.ingredientes;
+    }
+    
+    // Fallback por ID específicos conocidos
+    const ingredientesPorID: Record<number, string[]> = {
+      1: ['Harina de maíz', 'Agua tibia', 'Sal', 'Queso fresco'],
+      2: ['Papa amarilla', 'Carne molida', 'Cebolla', 'Huevo', 'Aceite'],
+      3: ['Quinua', 'Zanahoria', 'Apio', 'Cebolla', 'Aceite'],
+      4: ['Pescado fresco', 'Limón', 'Cebolla', 'Ají', 'Sal'],
+      5: ['Arroz', 'Mariscos mixtos', 'Pimientos rojos', 'Ají amarillo', 'Caldo de pescado', 'Culantro', 'Cebolla', 'Ajo'],
+      6: ['Arroz', 'Mariscos mixtos', 'Cebolla', 'Ají', 'Culantro'],
+      7: ['Plátano verde', 'Cecina', 'Aceite', 'Sal'],
+      8: ['Arroz', 'Gallina', 'Huevo', 'Hojas de bijao', 'Especias']
+    };
+    
+    return ingredientesPorID[parseInt(recipe.id)] || ['Ingredientes no disponibles'];
+  };
+
   // Función para obtener imagen de receta
   const getRecipeImage = (recipe: any) => {
     // Si la receta tiene un campo img (ya sea de PocketBase o hardcodeada)
@@ -1090,50 +1118,48 @@ const App = () => {
                 </Text>
               </View>
               
-              {!recipe.ingredientes || recipe.ingredientes.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No hay ingredientes disponibles para esta receta</Text>
-                </View>
-              ) : (
-                recipe.ingredientes.map((ing: string, idx: number) => {
-                const isChecked = checkedIngredients.has(idx);
-                
-                return (
-                  <View key={ing} style={[styles.ingredientCheckRow, { backgroundColor: '#fff' }]}>
-                    <TouchableOpacity 
-                      style={[styles.checkboxButton, { 
-                        borderColor: regionColor,
-                        backgroundColor: isChecked ? regionColor : '#fff'
-                      }]}
-                      onPress={() => {
-                        const newChecked = new Set(checkedIngredients);
-                        if (isChecked) {
-                          newChecked.delete(idx);
-                        } else {
-                          newChecked.add(idx);
-                        }
-                        setCheckedIngredients(newChecked);
-                      }}
-                    >
-                      <Text style={[styles.checkboxText, { 
-                        color: isChecked ? '#fff' : 'transparent'
+              {/* Ingredientes - USAR FUNCIÓN QUE SIEMPRE FUNCIONA */}
+              {(() => {
+                const ingredientes = getRecipeIngredients(recipe);
+                return ingredientes.map((ing: string, idx: number) => {
+                  const isChecked = checkedIngredients.has(idx);
+                  
+                  return (
+                    <View key={`${ing}-${idx}`} style={[styles.ingredientCheckRow, { backgroundColor: '#fff' }]}>
+                      <TouchableOpacity 
+                        style={[styles.checkboxButton, { 
+                          borderColor: regionColor,
+                          backgroundColor: isChecked ? regionColor : '#fff'
+                        }]}
+                        onPress={() => {
+                          const newChecked = new Set(checkedIngredients);
+                          if (isChecked) {
+                            newChecked.delete(idx);
+                          } else {
+                            newChecked.add(idx);
+                          }
+                          setCheckedIngredients(newChecked);
+                        }}
+                      >
+                        <Text style={[styles.checkboxText, { 
+                          color: isChecked ? '#fff' : 'transparent'
+                        }]}>
+                          ✓
+                        </Text>
+                      </TouchableOpacity>
+                      <Text style={[styles.ingredientCheckText, {
+                        textDecorationLine: isChecked ? 'line-through' : 'none',
+                        color: isChecked ? '#888' : '#333'
                       }]}>
-                        ✓
+                        {ing}
                       </Text>
-                    </TouchableOpacity>
-                    <Text style={[styles.ingredientCheckText, {
-                      textDecorationLine: isChecked ? 'line-through' : 'none',
-                      color: isChecked ? '#888' : '#333'
-                    }]}>
-                      {ing}
-                    </Text>
-                    <Text style={[styles.ingredientAmount, { color: regionColor }]}>
-                      {getIngredientAmount()}
-                    </Text>
-                  </View>
-                );
-              })
-              )}
+                      <Text style={[styles.ingredientAmount, { color: regionColor }]}>
+                        {getIngredientAmount()}
+                      </Text>
+                    </View>
+                  );
+                });
+              })()}
               
               {/* Botones de acción */}
               <View style={styles.detailButtonRow}>
@@ -1210,53 +1236,7 @@ const App = () => {
                 </Text>
               </View>
               
-              {/* Galería de Imágenes de Comida */}
-              <View style={styles.foodGalleryContainer}>
-                <Text style={[styles.sectionTitleNew, { color: regionColor }]}>
-                  📸 Galería de Imágenes
-                </Text>
-                <Text style={styles.sectionSubtitle}>
-                  Explora visualmente cada detalle de {recipe.nombre}
-                </Text>
-                
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galleryScrollContainer}>
-                  {/* Imagen del Plato Principal */}
-                  <View style={[styles.galleryItem, { borderColor: regionColor }]}>
-                    <Image 
-                      source={getRecipeImage(recipe)}
-                      style={styles.galleryMainImage}
-                    />
-                    <Text style={[styles.galleryLabel, { color: regionColor }]}>🍽️ Plato Principal</Text>
-                  </View>
-                  
-                  {/* Imagen de Ingredientes */}
-                  <View style={[styles.galleryItem, { borderColor: regionColor }]}>
-                    <Image 
-                      source={{ uri: 'https://images.unsplash.com/photo-1506368249639-73a05d6f6488?w=300&h=200&fit=crop' }}
-                      style={styles.galleryMainImage}
-                    />
-                    <Text style={[styles.galleryLabel, { color: regionColor }]}>🥕 Ingredientes</Text>
-                  </View>
-                  
-                  {/* Imagen del Proceso */}
-                  <View style={[styles.galleryItem, { borderColor: regionColor }]}>
-                    <Image 
-                      source={{ uri: 'https://images.unsplash.com/photo-1556909114-4f5c8cf8d05e?w=300&h=200&fit=crop' }}
-                      style={styles.galleryMainImage}
-                    />
-                    <Text style={[styles.galleryLabel, { color: regionColor }]}>👨‍� Preparación</Text>
-                  </View>
-                  
-                  {/* Imagen del Resultado */}
-                  <View style={[styles.galleryItem, { borderColor: regionColor }]}>
-                    <Image 
-                      source={{ uri: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop' }}
-                      style={styles.galleryMainImage}
-                    />
-                    <Text style={[styles.galleryLabel, { color: regionColor }]}>✨ Resultado Final</Text>
-                  </View>
-                </ScrollView>
-              </View>
+              {/* Sección de galería eliminada según solicitud del usuario */}
 
               {(() => {
                 // Videos específicos por región y tipo de receta
@@ -1350,75 +1330,6 @@ const App = () => {
                             <Text style={[styles.actionButtonText, { color: regionColor }]}>📤 Compartir</Text>
                           </TouchableOpacity>
                         </View>
-                      </View>
-                    </View>
-                    
-                    {/* Galería de Imágenes de Comida */}
-                    <View style={styles.foodGallerySection}>
-                      <Text style={[styles.sectionTitleNew, { color: regionColor }]}>
-                        📸 Galería de Imágenes
-                      </Text>
-                      <Text style={styles.sectionSubtitle}>
-                        Explora visualmente cada paso y resultado
-                      </Text>
-                      
-                      <View style={styles.foodGalleryGrid}>
-                        {/* Fila 1 */}
-                        <View style={styles.galleryRow}>
-                          <TouchableOpacity style={[styles.foodGalleryItem, { borderColor: regionColor + '40' }]}>
-                            <Image 
-                              source={getRecipeImage(recipe)}
-                              style={styles.foodGalleryImage}
-                            />
-                            <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
-                              <Text style={styles.imageOverlayText}>Plato Terminado</Text>
-                            </View>
-                          </TouchableOpacity>
-                          
-                          <TouchableOpacity style={[styles.foodGalleryItem, { borderColor: regionColor + '40' }]}>
-                            <Image 
-                              source={{ uri: 'https://images.unsplash.com/photo-1506368249639-73a05d6f6488?w=300&h=200&fit=crop' }}
-                              style={styles.foodGalleryImage}
-                            />
-                            <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
-                              <Text style={styles.imageOverlayText}>Ingredientes Frescos</Text>
-                            </View>
-                          </TouchableOpacity>
-                        </View>
-                        
-                        {/* Fila 2 */}
-                        <View style={styles.galleryRow}>
-                          <TouchableOpacity style={[styles.foodGalleryItem, { borderColor: regionColor + '40' }]}>
-                            <Image 
-                              source={{ uri: 'https://images.unsplash.com/photo-1556909114-4f5c8cf8d05e?w=300&h=200&fit=crop' }}
-                              style={styles.foodGalleryImage}
-                            />
-                            <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
-                              <Text style={styles.imageOverlayText}>Proceso de Cocción</Text>
-                            </View>
-                          </TouchableOpacity>
-                          
-                          <TouchableOpacity style={[styles.foodGalleryItem, { borderColor: regionColor + '40' }]}>
-                            <Image 
-                              source={{ uri: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop' }}
-                              style={styles.foodGalleryImage}
-                            />
-                            <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
-                              <Text style={styles.imageOverlayText}>Presentación Final</Text>
-                            </View>
-                          </TouchableOpacity>
-                        </View>
-                        
-                        {/* Fila 3 - Panorámica */}
-                        <TouchableOpacity style={[styles.foodGalleryItemWide, { borderColor: regionColor + '40' }]}>
-                          <Image 
-                            source={{ uri: 'https://images.unsplash.com/photo-1574781330855-d0db3293032e?w=600&h=250&fit=crop' }}
-                            style={styles.foodGalleryImageWide}
-                          />
-                          <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
-                            <Text style={styles.imageOverlayText}>Vista Panorámica de la Mesa</Text>
-                          </View>
-                        </TouchableOpacity>
                       </View>
                     </View>
                   </View>
@@ -1571,11 +1482,6 @@ const App = () => {
   const renderScreen = () => {
     switch (nav) {
       case 'inicio':
-        // Si no está logueado, mostrar el componente de login
-        if (!isLoggedIn) {
-          return <SimpleLogin onLogin={handleLogin} />;
-        }
-        
         if (selectedRecipe) {
           return renderRecipeDetail(selectedRecipe);
         }
@@ -2497,11 +2403,6 @@ const App = () => {
           </ScrollView>
         );
       case 'perfil':
-        // Si no está logueado, mostrar el componente de login
-        if (!isLoggedIn) {
-          return <SimpleLogin onLogin={handleLogin} />;
-        }
-
         // Si está logueado, mostrar el perfil completo
         return (
           <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 40, backgroundColor: '#fff' }}>
@@ -2825,44 +2726,51 @@ const App = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      {renderScreen()}
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNavModern}>
-        {NAV_ITEMS.map(item => (
-          <TouchableOpacity
-            key={item.key}
-            style={[styles.navItemModern, nav === item.key && styles.navItemActiveModern]}
-            onPress={() => setNav(item.key as typeof nav)}
-            activeOpacity={0.85}
-          >
-            <View style={{
-              backgroundColor: nav === item.key ? '#ffecd2' : 'transparent',
-              borderRadius: 24,
-              padding: nav === item.key ? 8 : 6,
-              marginBottom: 2,
-              elevation: nav === item.key ? 4 : 0,
-              shadowColor: nav === item.key ? '#ff6a00' : 'transparent',
-              shadowOpacity: nav === item.key ? 0.18 : 0,
-              shadowRadius: nav === item.key ? 8 : 0,
-              borderWidth: nav === item.key ? 2 : 0,
-              borderColor: nav === item.key ? '#ff6a00' : 'transparent',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 44,
-              height: 44,
-            }}>
-              {/* Usar emoji como fallback si MaterialIcons falla */}
-              <Text style={{ 
-                fontSize: nav === item.key ? 24 : 20, 
-                color: nav === item.key ? '#ff6a00' : '#bbb' 
-              }}>
-                {item.emoji}
-              </Text>
-            </View>
-            <Text style={[styles.navLabelModern, nav === item.key && { color: '#ff6a00', fontWeight: 'bold' }]}>{item.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* Si no está logueado, mostrar solo el login - sin tabs ni navegación */}
+      {!isLoggedIn ? (
+        <SimpleLogin onLogin={handleLogin} />
+      ) : (
+        <>
+          {renderScreen()}
+          {/* Bottom Navigation - solo visible si está logueado */}
+          <View style={styles.bottomNavModern}>
+            {NAV_ITEMS.map(item => (
+              <TouchableOpacity
+                key={item.key}
+                style={[styles.navItemModern, nav === item.key && styles.navItemActiveModern]}
+                onPress={() => setNav(item.key as typeof nav)}
+                activeOpacity={0.85}
+              >
+                <View style={{
+                  backgroundColor: nav === item.key ? '#ffecd2' : 'transparent',
+                  borderRadius: 24,
+                  padding: nav === item.key ? 8 : 6,
+                  marginBottom: 2,
+                  elevation: nav === item.key ? 4 : 0,
+                  shadowColor: nav === item.key ? '#ff6a00' : 'transparent',
+                  shadowOpacity: nav === item.key ? 0.18 : 0,
+                  shadowRadius: nav === item.key ? 8 : 0,
+                  borderWidth: nav === item.key ? 2 : 0,
+                  borderColor: nav === item.key ? '#ff6a00' : 'transparent',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 44,
+                  height: 44,
+                }}>
+                  {/* Usar emoji como fallback si MaterialIcons falla */}
+                  <Text style={{ 
+                    fontSize: nav === item.key ? 24 : 20, 
+                    color: nav === item.key ? '#ff6a00' : '#bbb' 
+                  }}>
+                    {item.emoji}
+                  </Text>
+                </View>
+                <Text style={[styles.navLabelModern, nav === item.key && { color: '#ff6a00', fontWeight: 'bold' }]}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 };
