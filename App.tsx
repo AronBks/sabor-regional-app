@@ -33,17 +33,17 @@ const getYouTubeThumb = (url?: string) => {
   return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : undefined;
 };
 
-const REGIONES = ['Todas', 'Andina', 'Costa', 'Selva', 'Sierra', 'Pampa', 'Altiplano'];
+const REGIONES = ['Todas', 'Andina', 'Costa', 'Sierra', 'Pampa', 'Altiplano', 'Amazonica'];
 
 // Colores distintivos para cada región
 const COLORES_REGIONES = {
   'Todas': '#6B7280',
   'Andina': '#8B5CF6', // Morado montañoso
   'Costa': '#06B6D4', // Azul celeste océano
-  'Selva': '#10B981', // Verde selva
   'Sierra': '#F59E0B', // Dorado montaña
   'Pampa': '#84CC16', // Verde claro pradera
   'Altiplano': '#DC2626', // Rojo tierra alta
+  'Amazonica': '#059669', // Verde amazónico oscuro
 };
 
 // NAV items for bottom navigation  
@@ -70,7 +70,7 @@ const RECETAS = [
       'Forma bolas y aplana para hacer las arepas',
       'Cocina en sartén caliente por ambos lados hasta dorar'
     ],
-    descripcion: 'Deliciosas arepas tradicionales hechas con maíz blanco.',
+    descripcion: 'Auténticas arepas de maíz blanco venezolano-colombianas, esponjosas por dentro y doradas por fuera, perfectas para rellenar o acompañar.',
     video: 'https://www.youtube.com/watch?v=kpZx53kkslw',
     videoThumbnail: 'https://img.youtube.com/vi/kpZx53kkslw/hqdefault.jpg',
     nutricion: {
@@ -101,7 +101,9 @@ const RECETAS = [
       'Forma las papas rellenas con el guiso en el centro',
       'Pasa por huevo batido y fríe hasta dorar por todos lados'
     ],
-    descripcion: 'Deliciosa papa rellena de carne típica de los Andes.',
+    descripcion: 'Tradicional papa rellena peruana con carne molida y especias andinas, cubierta de una masa dorada y crujiente.',
+    video: 'https://www.youtube.com/watch?v=O6Dbiyg0ylE',
+    videoThumbnail: 'https://img.youtube.com/vi/O6Dbiyg0ylE/hqdefault.jpg',
     nutricion: {
       calorias: 380,
       proteinas: 18,
@@ -130,7 +132,13 @@ const RECETAS = [
       'Saltea las verduras picadas en aceite hasta que estén tiernas',
       'Mezcla la quinua cocida con las verduras salteadas'
     ],
-    descripcion: 'Nutritiva quinua con verduras andinas.',
+    descripcion: 'Nutritiva quinua con verduras frescas de los Andes, un superalimento rico en proteínas completas y sabores naturales de la tierra.',
+    video: 'https://www.youtube.com/watch?v=kUpr-Q6RDr8', // Usando video de locro de zapallo como similar
+    videoThumbnail: 'https://img.youtube.com/vi/kUpr-Q6RDr8/hqdefault.jpg',
+    tiempo_preparacion: 25,
+    dificultad: 'Fácil',
+    porciones: 4,
+    etiquetas: ['vegetariano', 'sin gluten', 'quinua', 'vegano'],
     nutricion: {
       calorias: 280,
       proteinas: 12,
@@ -157,7 +165,9 @@ const RECETAS = [
       'Añade cebolla cortada en juliana fina y ají al gusto',
       'Sazona con sal y deja marinar por 10-15 minutos hasta que el pescado esté "cocido"'
     ],
-    descripcion: 'Ceviche peruano fresco y sabroso.',
+    descripcion: 'Emblemático ceviche peruano con pescado fresco marinado en limón, el punto exacto de acidez y frescura del océano Pacífico.',
+    video: 'https://www.youtube.com/watch?v=w7w1E3BxJm4',
+    videoThumbnail: 'https://img.youtube.com/vi/w7w1E3BxJm4/hqdefault.jpg',
     nutricion: {
       calorias: 180,
       proteinas: 28,
@@ -167,7 +177,11 @@ const RECETAS = [
       energia: 65,
       perfilGrasas: 8,
       perfilFibra: 5
-    }
+    },
+    tiempo_preparacion: 20,
+    dificultad: 'Fácil',
+    porciones: 4,
+    etiquetas: ['pescado', 'sin gluten', 'cítricos']
   },
   {
     id: 5,
@@ -184,7 +198,9 @@ const RECETAS = [
       'Añade los mariscos y pimientos, cocina 15 minutos',
       'Decora con culantro fresco y sirve caliente'
     ],
-    descripcion: 'Exquisito arroz con mariscos frescos del Pacífico, un clásico de la costa.',
+    descripcion: 'Espectacular arroz con mariscos de la costa peruana, con sabores intensos del océano Pacífico y el punto perfecto del arroz.',
+    video: 'https://www.youtube.com/watch?v=w7w1E3BxJm4',
+    videoThumbnail: 'https://img.youtube.com/vi/w7w1E3BxJm4/hqdefault.jpg',
     nutricion: {
       calorias: 450,
       proteinas: 28,
@@ -222,11 +238,11 @@ const RECETAS = [
     }
   },
   
-  // REGIÓN SELVA
+  // REGIÓN AMAZÓNICA
   {
     id: 7,
     nombre: 'Tacacho con Cecina',
-    region: 'Selva',
+    region: 'Amazonica',
     img: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop', // Imagen local
     destacado: true,
     ingredientes: ['Plátano verde', 'Cecina', 'Aceite', 'Sal'],
@@ -236,7 +252,13 @@ const RECETAS = [
       'Agrega aceite y sal, mezcla hasta formar una masa homogénea',
       'Fríe la cecina en trozos y sirve acompañando el tacacho'
     ],
-    descripcion: 'Plato típico de la selva peruana.',
+    descripcion: 'Emblemático tacacho con cecina de la selva peruana, plátano verde majado y cecina ahumada que representa el sabor auténtico amazónico.',
+    video: 'https://www.youtube.com/watch?v=LGZrGnPQZMU',
+    videoThumbnail: 'https://img.youtube.com/vi/LGZrGnPQZMU/hqdefault.jpg',
+    tiempo_preparacion: 35,
+    dificultad: 'Intermedio',
+    porciones: 4,
+    etiquetas: ['plátano', 'cecina', 'selva', 'sin gluten'],
     nutricion: {
       calorias: 420,
       proteinas: 22,
@@ -251,22 +273,34 @@ const RECETAS = [
   {
     id: 8,
     nombre: 'Juane de Gallina',
-    region: 'Selva',
+    region: 'Amazonica',
     img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop', // Imagen local
     destacado: true,
     ingredientes: ['Arroz', 'Gallina', 'Huevo', 'Hojas de bijao', 'Especias'],
     pasos: ['Cocina la gallina con especias', 'Prepara el arroz', 'Envuelve en hojas de bijao', 'Hierve por 45 minutos'],
-    descripcion: 'Tradicional juane envuelto en hojas de bijao.',
+    descripcion: 'Emblemático juane de gallina de la selva peruana, envuelto en hojas de bijao con arroz sazonado y el sabor único de la Amazonía.',
+    video: 'https://www.youtube.com/watch?v=TqEUg8trnOg',
+    videoThumbnail: 'https://img.youtube.com/vi/TqEUg8trnOg/hqdefault.jpg',
+    tiempo_preparacion: 90,
+    dificultad: 'Intermedio',
+    porciones: 6,
+    etiquetas: ['gallina', 'arroz', 'tradicional', 'selva']
   },
   {
     id: 9,
     nombre: 'Patarashca de Pescado',
-    region: 'Selva',
+    region: 'Amazonica',
     img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop', // Imagen local
     destacado: false,
     ingredientes: ['Pescado de río', 'Plátano', 'Tomate', 'Cebolla', 'Hojas de plátano'],
     pasos: ['Sazona el pescado', 'Envuelve con verduras en hoja de plátano', 'Asa a la parrilla', 'Sirve caliente'],
-    descripcion: 'Pescado envuelto y asado con sabores amazónicos.',
+    descripcion: 'Auténtica patarashca amazónica con pescado de río envuelto en hojas de plátano, asado con el sabor único de la selva.',
+    video: 'https://www.youtube.com/watch?v=kUpr-Q6RDr8', // Usando video similar
+    videoThumbnail: 'https://img.youtube.com/vi/kUpr-Q6RDr8/hqdefault.jpg',
+    tiempo_preparacion: 40,
+    dificultad: 'Intermedio',
+    porciones: 4,
+    etiquetas: ['pescado', 'parrilla', 'selva', 'sin gluten']
   },
   
   // REGIÓN SIERRA
@@ -278,22 +312,34 @@ const RECETAS = [
     destacado: true,
     ingredientes: ['Carne de res', 'Cerdo', 'Papa', 'Camote', 'Humitas'],
     pasos: ['Prepara el horno de tierra', 'Sazona las carnes', 'Coloca por capas', 'Cubre y cocina por horas'],
-    descripcion: 'Ancestral técnica de cocción bajo tierra.',
+    descripcion: 'Ancestral pachamanca de la sierra peruana, cocción milenaria bajo tierra con piedras calientes que fusiona sabores únicos.',
+    video: 'https://www.youtube.com/watch?v=sJzHplyMIqE',
+    videoThumbnail: 'https://img.youtube.com/vi/sJzHplyMIqE/hqdefault.jpg',
+    tiempo_preparacion: 240,
+    dificultad: 'Avanzado',
+    porciones: 8,
+    etiquetas: ['carne', 'tradicional', 'horno tierra']
   },
   {
-    id: 11,
+    id: 10,
     nombre: 'Cuy Chactado',
     region: 'Sierra',
     img: 'https://cdn.pixabay.com/photo/2017/04/11/21/54/stuffed-peppers-2255998_640.jpg', // Imagen local
     destacado: false,
     ingredientes: ['Cuy', 'Papa', 'Maíz cancha', 'Ají', 'Chicha de jora'],
     pasos: ['Limpia y sazona el cuy', 'Fríe en aceite caliente', 'Sirve con papas', 'Acompaña con cancha'],
-    descripcion: 'Tradicional cuy frito de la sierra peruana.',
+    descripcion: 'Tradicional cuy chactado de la sierra peruana, frito hasta quedar dorado y crujiente, acompañado de papas y cancha serrana.',
+    video: 'https://www.youtube.com/watch?v=u5NeSULROP8',
+    videoThumbnail: 'https://img.youtube.com/vi/u5NeSULROP8/hqdefault.jpg',
+    tiempo_preparacion: 60,
+    dificultad: 'Avanzado',
+    porciones: 4,
+    etiquetas: ['carne', 'tradicional', 'sierra']
   },
   {
     id: 11,
     nombre: 'Rocoto Relleno',
-    region: 'Amazonica',
+    region: 'Sierra',
     img: 'https://cdn.pixabay.com/photo/2017/04/11/21/54/stuffed-peppers-2255998_640.jpg', // Imagen local
     destacado: true,
     ingredientes: ['Rocoto', 'Carne molida de res', 'Cebolla blanca', 'Queso fresco', 'Leche evaporada', 'Huevos', 'Aceitunas', 'Pasas'],
@@ -305,7 +351,9 @@ const RECETAS = [
       'Rellena los rocotos con la mezcla y cubre con queso',
       'Baña con leche evaporada y hornea hasta gratinar'
     ],
-    descripcion: 'Tradicional rocoto relleno de la región amazónica, picante y sabroso.',
+    descripcion: 'Auténtico rocoto relleno arequipeño con carne molida, queso gratinado y el picante perfecto que representa la tradición culinaria del sur del Perú.',
+    video: 'https://www.youtube.com/watch?v=StNwZaikK28',
+    videoThumbnail: 'https://img.youtube.com/vi/StNwZaikK28/hqdefault.jpg',
     nutricion: {
       calorias: 380,
       proteinas: 22,
@@ -324,7 +372,13 @@ const RECETAS = [
     destacado: true,
     ingredientes: ['Costillas de res', 'Sal gruesa', 'Chimichurri', 'Carbón'],
     pasos: ['Sazona la carne con sal', 'Prepara el fuego', 'Asa lentamente', 'Sirve con chimichurri'],
-    descripcion: 'Tradicional asado a la parrilla de las pampas.',
+    descripcion: 'Clásico asado de tira de las pampas argentinas, costillas jugosas cocinadas a fuego lento con sal gruesa y el aroma del carbón.',
+    video: 'https://www.youtube.com/watch?v=5sl60slSG0w',
+    videoThumbnail: 'https://img.youtube.com/vi/5sl60slSG0w/hqdefault.jpg',
+    tiempo_preparacion: 120,
+    dificultad: 'Intermedio',
+    porciones: 6,
+    etiquetas: ['carne', 'parrilla', 'pampa'],
   },
   {
     id: 13,
@@ -334,7 +388,13 @@ const RECETAS = [
     destacado: false,
     ingredientes: ['Masa de empanada', 'Carne cortada a cuchillo', 'Cebolla', 'Huevo', 'Aceitunas'],
     pasos: ['Prepara el relleno', 'Arma las empanadas', 'Pinta con huevo', 'Hornea hasta dorar'],
-    descripcion: 'Clásicas empanadas de carne jugosas.',
+    descripcion: 'Auténticas empanadas de carne con masa casera, relleno jugoso de carne cortada a cuchillo y el toque tradicional de aceitunas.',
+    video: 'https://www.youtube.com/watch?v=YAnsG-8H6kw',
+    videoThumbnail: 'https://img.youtube.com/vi/YAnsG-8H6kw/hqdefault.jpg',
+    tiempo_preparacion: 90,
+    dificultad: 'Intermedio',
+    porciones: 12,
+    etiquetas: ['carne', 'horno', 'tradicional']
   },
   {
     id: 14,
@@ -344,7 +404,13 @@ const RECETAS = [
     destacado: false,
     ingredientes: ['Zapallo', 'Porotos', 'Chorizo', 'Cebolla', 'Pimentón'],
     pasos: ['Remoja los porotos', 'Cocina con zapallo', 'Agrega chorizo', 'Condimenta y sirve'],
-    descripcion: 'Nutritivo locro con zapallo y porotos.',
+    descripcion: 'Cremoso locro de zapallo con porotos de las pampas, una sopa nutritiva y reconfortante con el sabor tradicional del campo.',
+    video: 'https://www.youtube.com/watch?v=kUpr-Q6RDr8',
+    videoThumbnail: 'https://img.youtube.com/vi/kUpr-Q6RDr8/hqdefault.jpg',
+    tiempo_preparacion: 60,
+    dificultad: 'Fácil',
+    porciones: 6,
+    etiquetas: ['zapallo', 'porotos', 'sopa', 'vegetariano']
   },
   
   // REGIÓN ALTIPLANO
@@ -364,7 +430,13 @@ const RECETAS = [
       'Condimenta con hierbas frescas y cocina hasta que todo esté tierno',
       'Sirve bien caliente acompañado de llajua'
     ],
-    descripcion: 'Sopa tradicional paceña con chuño, perfecta para el clima frío del altiplano.',
+    descripcion: 'Reconfortante chairo paceño del altiplano boliviano, sopa espesa con chuño negro y carne que calienta el alma en las alturas.',
+    video: 'https://www.youtube.com/watch?v=c_YPubID2rY', // Usando video similar de charkekan
+    videoThumbnail: 'https://img.youtube.com/vi/c_YPubID2rY/hqdefault.jpg',
+    tiempo_preparacion: 90,
+    dificultad: 'Intermedio',
+    porciones: 6,
+    etiquetas: ['sopa', 'chuño', 'altiplano', 'tradicional'],
     nutricion: {
       calorias: 420,
       proteinas: 25,
@@ -423,6 +495,39 @@ const RECETAS = [
       grasas: 6,
       fibra: 5
     }
+  },
+  {
+    id: 19,
+    nombre: 'Suri (Gusano de Palmera)',
+    region: 'Amazonica',
+    img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=300&fit=crop',
+    destacado: true,
+    ingredientes: ['Suri (larva de palmera)', 'Sal', 'Ajo', 'Cebolla', 'Ají charapita', 'Aceite'],
+    pasos: [
+      'Limpia cuidadosamente los suris frescos',
+      'Calienta aceite en una sartén a fuego medio',
+      'Sofríe ajo y cebolla picados finamente', 
+      'Agrega los suris y cocina por 3-4 minutos',
+      'Sazona con sal y ají charapita al gusto',
+      'Sirve inmediatamente como aperitivo'
+    ],
+    descripcion: 'Exótico platillo amazónico con larvas de palmera, considerado una delicia nutritiva en la selva peruana.',
+    video: 'https://www.youtube.com/watch?v=rNvE_Sd7Y4k',
+    videoThumbnail: 'https://img.youtube.com/vi/rNvE_Sd7Y4k/hqdefault.jpg',
+    nutricion: {
+      calorias: 180,
+      proteinas: 25,
+      carbohidratos: 2,
+      grasas: 8,
+      fibra: 1,
+      energia: 80,
+      perfilGrasas: 40,
+      perfilFibra: 5
+    },
+    tiempo_preparacion: 15,
+    dificultad: 'Fácil',
+    porciones: 2,
+    etiquetas: ['tradicional', 'proteína', 'amazónico']
   },
 ];
 
@@ -674,7 +779,7 @@ const App = () => {
       let destacadas = [];
       
       // Obtener 2 recetas de cada región
-      const regiones = ['Costa', 'Sierra', 'Amazónica', 'Andina'];
+      const regiones = ['Costa', 'Sierra', 'Andina', 'Pampa', 'Altiplano', 'Amazonica'];
       regiones.forEach(reg => {
         const recetasRegion = RECETAS_ACTIVAS.filter(r => r.region === reg);
         if (recetasRegion.length > 0) {
@@ -1242,31 +1347,35 @@ const App = () => {
                 // Videos específicos por región y tipo de receta
                 const videoLibrary = {
                   // Videos de Región Andina
-                  1: { id: 'kpZx53kkslw', title: 'Arepas de Maíz Tradicionales', views: '15.2K', likes: '97%', duration: '8:45', chef: 'Chef María' },
-                  2: { id: 'dQw4w9WgXcQ', title: 'Papa Rellena Peruana Auténtica', views: '28.5K', likes: '96%', duration: '12:30', chef: 'Chef Carlos' },
-                  3: { id: 'jNQXAC9IVRw', title: 'Empanadas Andinas Caseras', views: '9.8K', likes: '94%', duration: '15:20', chef: 'Chef Ana' },
+                  1: { id: 'kpZx53kkslw', title: 'Arepas de Maíz Blanco Tradicionales', views: '15.2K', likes: '97%', duration: '8:45', chef: 'Chef María' },
+                  2: { id: 'O6Dbiyg0ylE', title: 'Papa Rellena Peruana Auténtica', views: '28.5K', likes: '96%', duration: '12:30', chef: 'Chef Carlos' },
+                  3: { id: 'kUpr-Q6RDr8', title: 'Quinua con Verduras Andinas', views: '9.8K', likes: '94%', duration: '15:20', chef: 'Chef Ana' },
                   
                   // Videos de Región Costa
-                  4: { id: 'ZZ5LpwO-An4', title: 'Ceviche Peruano Tradicional', views: '45.3K', likes: '98%', duration: '6:15', chef: 'Chef Ricardo' },
-                  5: { id: 'tgbNymZ7vqY', title: 'Arroz con Mariscos Costeño', views: '32.7K', likes: '95%', duration: '18:40', chef: 'Chef Isabel' },
+                  4: { id: 'w7w1E3BxJm4', title: 'Ceviche de Pescado Peruano', views: '45.3K', likes: '98%', duration: '6:15', chef: 'Chef Ricardo' },
+                  5: { id: 'g8KtVz3Hq2M', title: 'Arroz con Mariscos Costeño', views: '32.7K', likes: '95%', duration: '18:40', chef: 'Chef Isabel' },
                   6: { id: 'hT_nvWreIhg', title: 'Pescado Frito Estilo Costa', views: '12.1K', likes: '93%', duration: '10:25', chef: 'Chef Miguel' },
                   
                   // Videos de Región Amazónica
-                  7: { id: '8UVNT4wvIGY', title: 'Tacacho con Cecina Amazónico', views: '18.9K', likes: '96%', duration: '14:15', chef: 'Chef Rosa' },
-                  8: { id: 'Gc2en3nHxA4', title: 'Juane de Pollo Tradicional', views: '21.4K', likes: '97%', duration: '16:30', chef: 'Chef Fernando' },
-                  9: { id: '4fndeDfaWCg', title: 'Patarashca de Pescado', views: '8.7K', likes: '94%', duration: '11:50', chef: 'Chef Luisa' },
-                  10: { id: 'Lrj2Hq7xqQ8', title: 'Inchicapi de Gallina', views: '13.6K', likes: '95%', duration: '19:20', chef: 'Chef Pedro' },
-                  11: { id: 'M5V_IXMewls', title: 'Rocoto Relleno Arequipeño', views: '25.8K', likes: '98%', duration: '13:45', chef: 'Chef Carmen' },
+                  7: { id: 'LGZrGnPQZMU', title: 'Tacacho con Cecina Amazónico', views: '18.9K', likes: '96%', duration: '14:15', chef: 'Chef Rosa' },
+                  8: { id: 'TqEUg8trnOg', title: 'Juane de Gallina Tradicional', views: '21.4K', likes: '97%', duration: '16:30', chef: 'Chef Fernando' },
+                  9: { id: 'rNvE_Sd7Y4k', title: 'Patarashca de Pescado Selvático', views: '8.7K', likes: '94%', duration: '11:50', chef: 'Chef Luisa' },
+                  10: { id: 'sJzHplyMIqE', title: 'Pachamanca de la Sierra', views: '13.6K', likes: '95%', duration: '19:20', chef: 'Chef Pedro' },
+                  11: { id: 'u5NeSULROP8', title: 'Cuy Chactado de la Sierra', views: '13.6K', likes: '95%', duration: '19:20', chef: 'Chef Pedro' },
+                  12: { id: 'StNwZaikK28', title: 'Rocoto Relleno Arequipeño', views: '25.8K', likes: '98%', duration: '13:45', chef: 'Chef Carmen' },
                   
                   // Videos de Región Pampa
-                  12: { id: 'BaW_jenozKc', title: 'Asado de Tira Argentino', views: '38.2K', likes: '97%', duration: '22:15', chef: 'Chef Eduardo' },
-                  13: { id: 'fJ9rUzIMcZQ', title: 'Empanadas de Carne Jugosas', views: '29.3K', likes: '96%', duration: '17:30', chef: 'Chef Mónica' },
-                  14: { id: 'dQw4w9WgXcQ', title: 'Locro de Zapallo Cremoso', views: '16.7K', likes: '94%', duration: '14:40', chef: 'Chef Alberto' },
+                  13: { id: '5sl60slSG0w', title: 'Asado de Tira Argentino', views: '38.2K', likes: '97%', duration: '22:15', chef: 'Chef Eduardo' },
+                  14: { id: 'YAnsG-8H6kw', title: 'Empanadas de Carne Jugosas', views: '29.3K', likes: '96%', duration: '17:30', chef: 'Chef Mónica' },
+                  15: { id: 'mT8j9v5RhAo', title: 'Locro de Zapallo Cremoso', views: '16.7K', likes: '94%', duration: '14:40', chef: 'Chef Alberto' },
                   
-                  // Videos de Región Altiplano
-                  15: { id: 'jNQXAC9IVRw', title: 'Chairo Paceño Tradicional', views: '11.9K', likes: '95%', duration: '20:10', chef: 'Chef Elena' },
-                  16: { id: 'ZZ5LpwO-An4', title: 'Charquekan Potosino', views: '8.4K', likes: '93%', duration: '16:25', chef: 'Chef Raúl' },
-                  17: { id: 'tgbNymZ7vqY', title: 'Jaka Lawa de Quinua', views: '7.2K', likes: '96%', duration: '12:55', chef: 'Chef Sandra' }
+                  // Videos de Región Altiplano  
+                  16: { id: 'c_YPubID2rY', title: 'Chairo Paceño Tradicional', views: '11.9K', likes: '95%', duration: '20:10', chef: 'Chef Elena' },
+                  17: { id: 'bV3kR_7NZHU', title: 'Charquekan Potosino', views: '8.4K', likes: '93%', duration: '16:25', chef: 'Chef Raúl' },
+                  18: { id: '3zEhA5rs1vo', title: 'Jaka Lawa de Quinua', views: '7.2K', likes: '96%', duration: '12:55', chef: 'Chef Sandra' },
+                  
+                  // Videos de Región Amazónica
+                  19: { id: 'rNvE_Sd7Y4k', title: 'Suri Amazónico Tradicional', views: '5.8K', likes: '92%', duration: '8:20', chef: 'Chef Jungle' }
                 };
                 
                 const videoData = videoLibrary[recipe.id] || videoLibrary[1];
