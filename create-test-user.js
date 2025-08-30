@@ -11,26 +11,26 @@ async function createTestUser() {
     console.log('👤 Creando usuario de prueba...');
 
     const userData = {
-      email: 'test@recetas.com',
+      email: 'test@test.com',
       password: '12345678',
       passwordConfirm: '12345678',
-      name: 'Usuario de Prueba',
+      name: 'Test User',
       emailVisibility: true
     };
 
     const record = await pb.collection('users').create(userData);
     
     console.log('✅ Usuario de prueba creado exitosamente!');
-    console.log('📧 Email: test@recetas.com');
+    console.log('📧 Email: test@test.com');
     console.log('🔑 Password: 12345678');
-    console.log('👤 Nombre: Usuario de Prueba');
+    console.log('👤 Nombre: Test User');
     console.log('');
     console.log('🚀 Ahora puedes usar estos datos para hacer login en tu app');
     
   } catch (error) {
     if (error.message && error.message.includes('already exists')) {
       console.log('ℹ️  El usuario de prueba ya existe');
-      console.log('📧 Email: test@recetas.com');
+      console.log('📧 Email: test@test.com');
       console.log('🔑 Password: 12345678');
     } else {
       console.error('❌ Error creando usuario:', error.message);

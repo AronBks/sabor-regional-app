@@ -7,27 +7,7 @@ import { IngredientAnalysisService } from './src/services/ingredientAnalysis';
 import { analysisService, initializePocketBase } from './src/pocketbase';
 import { userRecipeService } from './src/userRecipeService';
 import simpleAuthService from './src/simpleAuth';
-
-// Configuración de imágenes usando URLs alternativas que funcionan
-const IMAGENES_RECETAS = {
-  1: { uri: 'https://images.unsplash.com/photo-1529059997568-3d847b1154f0?w=400&h=300&fit=crop' }, // Arepas - alternativa que funciona
-  2: { uri: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=300&fit=crop' }, // Papa Rellena - alternativa
-  3: { uri: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop' }, // Empanada - alternativa
-  4: { uri: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop' }, // Ceviche
-  5: { uri: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop' }, // Arroz con Mariscos
-  6: { uri: 'https://images.unsplash.com/photo-1574781330855-d0db3293032e?w=400&h=300&fit=crop' }, // Pescado Frito
-  7: { uri: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop' }, // Tacacho - alternativa
-  8: { uri: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop' }, // Juane - alternativa
-  9: { uri: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop' }, // Patarashca
-  10: { uri: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=300&fit=crop' }, // Inchicapi
-  11: { uri: 'https://cdn.pixabay.com/photo/2017/04/11/21/54/stuffed-peppers-2255998_640.jpg' }, // Rocoto Relleno
-  12: { uri: 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop' }, // Asado
-  13: { uri: 'https://cdn.pixabay.com/photo/2020/03/08/09/18/food-4840664_640.jpg' }, // Empanada de Carne
-  14: { uri: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop' }, // Locro
-  15: { uri: 'https://cdn.pixabay.com/photo/2023/04/21/07/41/soup-8021570_640.jpg' }, // Chairo
-  16: { uri: 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&h=300&fit=crop' }, // Charquekan
-  17: { uri: 'https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=400&h=300&fit=crop' }, // Jaka Lawa
-};
+import recetasService, { RecetaForApp } from './src/recetasFromDB';
 
 // Helpers para YouTube
 /** Extrae el ID de YouTube de de varios formatos: watch?v=, youtu.be, embed, shorts */
@@ -81,7 +61,7 @@ const RECETAS = [
     id: 1,
     nombre: 'Arepas de Maíz Blanco',
     region: 'Andina',
-    img: IMAGENES_RECETAS[1], // Imagen local
+    img: 'https://images.unsplash.com/photo-1529059997568-3d847b1154f0?w=400&h=300&fit=crop', // Imagen local
     destacado: true,
     ingredientes: ['Harina de maíz', 'Agua tibia', 'Sal', 'Queso fresco'],
     pasos: [
@@ -102,13 +82,17 @@ const RECETAS = [
       energia: 75,
       perfilGrasas: 22,
       perfilFibra: 15
-    }
+    },
+    tiempo_preparacion: 30,
+    dificultad: 'Fácil',
+    porciones: 4,
+    etiquetas: ['vegetariano', 'lácteos', 'gluten']
   },
   {
     id: 2,
     nombre: 'Papa Rellena',
     region: 'Andina',
-    img: IMAGENES_RECETAS[2], // Imagen local
+    img: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=300&fit=crop', // Imagen local
     destacado: true,
     ingredientes: ['Papa amarilla', 'Carne molida', 'Cebolla', 'Huevo', 'Aceite'],
     pasos: [
@@ -127,13 +111,17 @@ const RECETAS = [
       energia: 75,
       perfilGrasas: 33,
       perfilFibra: 15
-    }
+    },
+    tiempo_preparacion: 45,
+    dificultad: 'Intermedio',
+    porciones: 4,
+    etiquetas: ['carne', 'huevo']
   },
   {
     id: 3,
     nombre: 'Quinua con Verduras',
     region: 'Andina',
-    img: IMAGENES_RECETAS[3], // Imagen local
+    img: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop', // Imagen local
     destacado: false,
     ingredientes: ['Quinua', 'Zanahoria', 'Apio', 'Cebolla', 'Aceite'],
     pasos: [
@@ -160,7 +148,7 @@ const RECETAS = [
     id: 4,
     nombre: 'Ceviche de Pescado',
     region: 'Costa',
-    img: IMAGENES_RECETAS[4], // Imagen local
+    img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop', // Imagen local
     destacado: true,
     ingredientes: ['Pescado fresco', 'Limón', 'Cebolla', 'Ají', 'Sal'],
     pasos: [
@@ -185,7 +173,7 @@ const RECETAS = [
     id: 5,
     nombre: 'Arroz con Mariscos',
     region: 'Costa',
-    img: IMAGENES_RECETAS[5], // Imagen local
+    img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop', // Imagen local
     destacado: true,
     ingredientes: ['Arroz', 'Mariscos mixtos', 'Pimientos rojos', 'Ají amarillo', 'Caldo de pescado', 'Culantro', 'Cebolla', 'Ajo'],
     pasos: [
@@ -212,7 +200,7 @@ const RECETAS = [
     id: 6,
     nombre: 'Arroz con Mariscos',
     region: 'Costa',
-    img: IMAGENES_RECETAS[6], // Imagen local
+    img: 'https://images.unsplash.com/photo-1574781330855-d0db3293032e?w=400&h=300&fit=crop', // Imagen local
     destacado: false,
     ingredientes: ['Arroz', 'Mariscos mixtos', 'Cebolla', 'Ají', 'Culantro'],
     pasos: [
@@ -239,7 +227,7 @@ const RECETAS = [
     id: 7,
     nombre: 'Tacacho con Cecina',
     region: 'Selva',
-    img: IMAGENES_RECETAS[7], // Imagen local
+    img: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop', // Imagen local
     destacado: true,
     ingredientes: ['Plátano verde', 'Cecina', 'Aceite', 'Sal'],
     pasos: [
@@ -264,7 +252,7 @@ const RECETAS = [
     id: 8,
     nombre: 'Juane de Gallina',
     region: 'Selva',
-    img: IMAGENES_RECETAS[8], // Imagen local
+    img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop', // Imagen local
     destacado: true,
     ingredientes: ['Arroz', 'Gallina', 'Huevo', 'Hojas de bijao', 'Especias'],
     pasos: ['Cocina la gallina con especias', 'Prepara el arroz', 'Envuelve en hojas de bijao', 'Hierve por 45 minutos'],
@@ -274,7 +262,7 @@ const RECETAS = [
     id: 9,
     nombre: 'Patarashca de Pescado',
     region: 'Selva',
-    img: IMAGENES_RECETAS[9], // Imagen local
+    img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop', // Imagen local
     destacado: false,
     ingredientes: ['Pescado de río', 'Plátano', 'Tomate', 'Cebolla', 'Hojas de plátano'],
     pasos: ['Sazona el pescado', 'Envuelve con verduras en hoja de plátano', 'Asa a la parrilla', 'Sirve caliente'],
@@ -286,7 +274,7 @@ const RECETAS = [
     id: 10,
     nombre: 'Pachamanca',
     region: 'Sierra',
-    img: IMAGENES_RECETAS[10], // Imagen local
+    img: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=300&fit=crop', // Imagen local
     destacado: true,
     ingredientes: ['Carne de res', 'Cerdo', 'Papa', 'Camote', 'Humitas'],
     pasos: ['Prepara el horno de tierra', 'Sazona las carnes', 'Coloca por capas', 'Cubre y cocina por horas'],
@@ -296,7 +284,7 @@ const RECETAS = [
     id: 11,
     nombre: 'Cuy Chactado',
     region: 'Sierra',
-    img: IMAGENES_RECETAS[11], // Imagen local
+    img: 'https://cdn.pixabay.com/photo/2017/04/11/21/54/stuffed-peppers-2255998_640.jpg', // Imagen local
     destacado: false,
     ingredientes: ['Cuy', 'Papa', 'Maíz cancha', 'Ají', 'Chicha de jora'],
     pasos: ['Limpia y sazona el cuy', 'Fríe en aceite caliente', 'Sirve con papas', 'Acompaña con cancha'],
@@ -306,7 +294,7 @@ const RECETAS = [
     id: 11,
     nombre: 'Rocoto Relleno',
     region: 'Amazonica',
-    img: IMAGENES_RECETAS[11], // Imagen local
+    img: 'https://cdn.pixabay.com/photo/2017/04/11/21/54/stuffed-peppers-2255998_640.jpg', // Imagen local
     destacado: true,
     ingredientes: ['Rocoto', 'Carne molida de res', 'Cebolla blanca', 'Queso fresco', 'Leche evaporada', 'Huevos', 'Aceitunas', 'Pasas'],
     pasos: [
@@ -332,7 +320,7 @@ const RECETAS = [
     id: 12,
     nombre: 'Asado de Tira',
     region: 'Pampa',
-    img: IMAGENES_RECETAS[12], // Imagen local
+    img: 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop', // Imagen local
     destacado: true,
     ingredientes: ['Costillas de res', 'Sal gruesa', 'Chimichurri', 'Carbón'],
     pasos: ['Sazona la carne con sal', 'Prepara el fuego', 'Asa lentamente', 'Sirve con chimichurri'],
@@ -342,7 +330,7 @@ const RECETAS = [
     id: 13,
     nombre: 'Empanadas de Carne',
     region: 'Pampa',
-    img: IMAGENES_RECETAS[13], // Imagen local
+    img: 'https://cdn.pixabay.com/photo/2020/03/08/09/18/food-4840664_640.jpg', // Imagen local
     destacado: false,
     ingredientes: ['Masa de empanada', 'Carne cortada a cuchillo', 'Cebolla', 'Huevo', 'Aceitunas'],
     pasos: ['Prepara el relleno', 'Arma las empanadas', 'Pinta con huevo', 'Hornea hasta dorar'],
@@ -352,7 +340,7 @@ const RECETAS = [
     id: 14,
     nombre: 'Locro de Zapallo',
     region: 'Pampa',
-    img: IMAGENES_RECETAS[14], // Imagen local
+    img: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop', // Imagen local
     destacado: false,
     ingredientes: ['Zapallo', 'Porotos', 'Chorizo', 'Cebolla', 'Pimentón'],
     pasos: ['Remoja los porotos', 'Cocina con zapallo', 'Agrega chorizo', 'Condimenta y sirve'],
@@ -364,7 +352,7 @@ const RECETAS = [
     id: 15,
     nombre: 'Chairo Paceño',
     region: 'Altiplano',
-    img: IMAGENES_RECETAS[15], // Imagen local
+    img: 'https://cdn.pixabay.com/photo/2023/04/21/07/41/soup-8021570_640.jpg', // Imagen local
     destacado: true,
     ingredientes: ['Chuño negro', 'Carne de llama o res', 'Papa', 'Cebada perlada', 'Zanahoria', 'Apio', 'Perejil', 'Hierba buena', 'Sal'],
     pasos: [
@@ -389,7 +377,7 @@ const RECETAS = [
     id: 16,
     nombre: 'Charquekan',
     region: 'Altiplano',
-    img: IMAGENES_RECETAS[16], // Imagen local
+    img: 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&h=300&fit=crop', // Imagen local
     destacado: false,
     ingredientes: ['Charque de llama', 'Papa blanca', 'Chuño', 'Cebolla', 'Tomate', 'Ají colorado', 'Huevo', 'Queso fresco'],
     pasos: [
@@ -414,7 +402,7 @@ const RECETAS = [
     id: 17,
     nombre: 'Jaka Lawa',
     region: 'Altiplano',
-    img: IMAGENES_RECETAS[17], // Imagen local
+    img: 'https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=400&h=300&fit=crop', // Imagen local
     destacado: false,
     ingredientes: ['Quinua', 'Carne de res', 'Papa amarilla', 'Cebolla', 'Zanahoria', 'Apio', 'Culantro', 'Hierba buena', 'Sal'],
     pasos: [
@@ -474,15 +462,92 @@ const App = () => {
   const [userFavorites, setUserFavorites] = useState<any[]>([]);
   const [isRecipeFavorite, setIsRecipeFavorite] = useState(false);
   
+  // Estados para recetas desde PocketBase
+  const [recetasPB, setRecetasPB] = useState<any[]>([]);
+  const [loadingRecetas, setLoadingRecetas] = useState(true);
+  
+  // Función para cargar recetas desde PocketBase
+  const cargarRecetasDePocketBase = async () => {
+    try {
+      setLoadingRecetas(true);
+      let recetasFromDB;
+      
+      // Si hay usuario autenticado, cargar recetas filtradas por preferencias
+      if (currentUser && currentUser.preferences) {
+        console.log('Cargando recetas con preferencias del usuario:', currentUser.preferences);
+        recetasFromDB = await recetasService.obtenerRecetasPorPreferencias(currentUser.preferences);
+      } else {
+        // Si no hay usuario o preferencias, cargar todas las recetas
+        recetasFromDB = await recetasService.obtenerTodasLasRecetas();
+      }
+      
+      setRecetasPB(recetasFromDB);
+      console.log('Recetas cargadas desde PocketBase:', recetasFromDB.length);
+    } catch (error) {
+      console.error('Error cargando recetas desde PocketBase:', error);
+      // Si falla, usar las recetas hardcodeadas como fallback
+      setRecetasPB([]);
+    } finally {
+      setLoadingRecetas(false);
+    }
+  };
+  
+  // Variable combinada para usar en la app
+  const RECETAS_ACTIVAS = recetasPB.length > 0 ? recetasPB : RECETAS;
+  
+  // Función para obtener imagen de receta
+  const getRecipeImage = (recipe: any) => {
+    // Si la receta tiene un campo img (ya sea de PocketBase o hardcodeada)
+    if (recipe.img) {
+      return { uri: recipe.img };
+    }
+    // Fallback para recetas hardcodeadas que usan IMAGENES_RECETAS
+    const hardcodedImages: Record<number, any> = {
+      1: { uri: 'https://images.unsplash.com/photo-1529059997568-3d847b1154f0?w=400&h=300&fit=crop' },
+      2: { uri: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=300&fit=crop' },
+      3: { uri: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop' },
+      4: { uri: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop' },
+      5: { uri: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop' },
+      6: { uri: 'https://images.unsplash.com/photo-1574781330855-d0db3293032e?w=400&h=300&fit=crop' },
+      7: { uri: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop' },
+      8: { uri: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop' },
+      9: { uri: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop' },
+      10: { uri: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=300&fit=crop' },
+      11: { uri: 'https://cdn.pixabay.com/photo/2017/04/11/21/54/stuffed-peppers-2255998_640.jpg' },
+      12: { uri: 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop' },
+      13: { uri: 'https://cdn.pixabay.com/photo/2020/03/08/09/18/food-4840664_640.jpg' },
+      14: { uri: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop' },
+      15: { uri: 'https://cdn.pixabay.com/photo/2023/04/21/07/41/soup-8021570_640.jpg' },
+      16: { uri: 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&h=300&fit=crop' },
+      17: { uri: 'https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=400&h=300&fit=crop' },
+    };
+    return hardcodedImages[recipe.id] || hardcodedImages[1];
+  };
+  
   // Estados de navegación y UI existentes
   const [region, setRegion] = useState<'Todas' | string>('Todas');
   const [nav, setNav] = useState<'inicio' | 'buscar' | 'camara' | 'lista' | 'perfil'>('inicio');
   const [selectedRecipe, setSelectedRecipe] = useState<
-    | (typeof RECETAS)[number]
+    | (typeof RECETAS_ACTIVAS)[number]
     | null
   >(null);
   const [activeTab, setActiveTab] = useState('ingredientes');
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
+  
+  // Estados para búsqueda en tiempo real
+  const [searchQuery, setSearchQuery] = useState('');
+  const [recetasFiltradas, setRecetasFiltradas] = useState<any[]>([]);
+  const [busquedaRecetas, setBusquedaRecetas] = useState(false);
+  const [recetasDestacadas, setRecetasDestacadas] = useState<any[]>([]);
+  const [ultimasBusquedas, setUltimasBusquedas] = useState<string[]>([]);
+  
+  // Lista de ingredientes populares para sugerencias
+  const [ingredientesSugeridos] = useState([
+    'Arroz', 'Pollo', 'Pescado', 'Carne', 'Cebolla', 'Ajo', 'Tomate', 'Papa', 
+    'Limón', 'Sal', 'Pimienta', 'Aceite', 'Queso', 'Huevo', 'Leche', 'Harina',
+    'Cilantro', 'Culantro', 'Ají', 'Cúrcuma', 'Comino', 'Orégano', 'Plátano',
+    'Yuca', 'Camote', 'Maíz', 'Quinua', 'Zapallo', 'Zanahoria', 'Rocoto'
+  ]);
   
   // Inicializar PocketBase al cargar la app
   useEffect(() => {
@@ -505,6 +570,131 @@ const App = () => {
     setupPocketBase();
   }, []);
   
+  // Cargar recetas desde PocketBase
+  useEffect(() => {
+    cargarRecetasDePocketBase();
+  }, [currentUser]); // Recargar cuando cambie el usuario
+
+  // Cargar recetas cuando cambien las preferencias del usuario
+  useEffect(() => {
+    if (currentUser) {
+      cargarRecetasDePocketBase();
+    }
+  }, [currentUser?.preferences]);
+  
+  // Filtrar recetas en tiempo real basado en búsqueda y región
+  useEffect(() => {
+    let filtered = RECETAS_ACTIVAS;
+    
+    // Filtrar por región
+    if (region !== 'Todas') {
+      filtered = filtered.filter(r => r.region === region);
+    }
+    
+    // Filtrar por búsqueda en tiempo real
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase().trim();
+      
+      // Guardar búsqueda si tiene más de 2 caracteres
+      if (query.length > 2 && !ultimasBusquedas.includes(query)) {
+        setUltimasBusquedas(prev => [query, ...prev.slice(0, 4)]); // Mantener solo 5 búsquedas
+      }
+      
+      filtered = filtered.filter(r => {
+        // Buscar en nombre
+        if (r.nombre?.toLowerCase().includes(query)) return true;
+        
+        // Buscar en descripción
+        if (r.descripcion?.toLowerCase().includes(query)) return true;
+        
+        // Buscar en región
+        if (r.region?.toLowerCase().includes(query)) return true;
+        
+        // Buscar en ingredientes (string separado por comas)
+        if (r.ingredientes && typeof r.ingredientes === 'string') {
+          const ingredientesArray = r.ingredientes.split(',').map(ing => ing.trim().toLowerCase());
+          if (ingredientesArray.some(ing => ing.includes(query))) return true;
+        }
+        
+        // Buscar en etiquetas si existen
+        if (r.etiquetas && typeof r.etiquetas === 'string') {
+          const etiquetasArray = r.etiquetas.split(',').map(tag => tag.trim().toLowerCase());
+          if (etiquetasArray.some(tag => tag.includes(query))) return true;
+        } else if (Array.isArray(r.etiquetas)) {
+          if (r.etiquetas.some(tag => tag.toLowerCase().includes(query))) return true;
+        }
+        
+        return false;
+      });
+      
+      setBusquedaRecetas(true);
+    } else {
+      setBusquedaRecetas(false);
+    }
+    
+    setRecetasFiltradas(filtered);
+  }, [RECETAS_ACTIVAS, region, searchQuery, ultimasBusquedas]);
+  
+  // Generar recetas destacadas dinámicamente
+  useEffect(() => {
+    if (RECETAS_ACTIVAS.length > 0) {
+      // Mezclar algoritmo de destacados:
+      // 1. Recetas populares por región
+      // 2. Recetas relacionadas con búsquedas recientes
+      // 3. Recetas aleatorias para variedad
+      
+      let destacadas = [];
+      
+      // Obtener 2 recetas de cada región
+      const regiones = ['Costa', 'Sierra', 'Amazónica', 'Andina'];
+      regiones.forEach(reg => {
+        const recetasRegion = RECETAS_ACTIVAS.filter(r => r.region === reg);
+        if (recetasRegion.length > 0) {
+          // Obtener recetas aleatorias de esta región
+          const shuffled = [...recetasRegion].sort(() => 0.5 - Math.random());
+          destacadas.push(...shuffled.slice(0, 2));
+        }
+      });
+      
+      // Agregar recetas basadas en búsquedas recientes
+      if (ultimasBusquedas.length > 0) {
+        ultimasBusquedas.forEach(busqueda => {
+          const relacionadas = RECETAS_ACTIVAS.filter(r => 
+            r.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+            (r.ingredientes && typeof r.ingredientes === 'string' && r.ingredientes.toLowerCase().includes(busqueda.toLowerCase()))
+          );
+          destacadas.push(...relacionadas.slice(0, 1));
+        });
+      }
+      
+      // Remover duplicados y mezclar
+      const destacadasUnicas = destacadas.filter((receta, index, arr) => 
+        arr.findIndex(r => r.id === receta.id) === index
+      );
+      
+      // Si no hay suficientes, agregar aleatorias
+      if (destacadasUnicas.length < 8) {
+        const faltantes = 8 - destacadasUnicas.length;
+        const disponibles = RECETAS_ACTIVAS.filter(r => 
+          !destacadasUnicas.some(d => d.id === r.id)
+        );
+        const aleatorias = [...disponibles].sort(() => 0.5 - Math.random()).slice(0, faltantes);
+        destacadasUnicas.push(...aleatorias);
+      }
+      
+      setRecetasDestacadas(destacadasUnicas.slice(0, 8));
+    }
+  }, [RECETAS_ACTIVAS, ultimasBusquedas]);
+  
+  // Cargar favoritos cuando cambie el usuario
+  useEffect(() => {
+    if (currentUser) {
+      loadUserFavorites(currentUser.id);
+    } else {
+      setFavoritos([]);
+    }
+  }, [currentUser]);
+
   // Limpiar checkboxes cuando se selecciona una nueva receta
   useEffect(() => {
     setCheckedIngredients(new Set());
@@ -528,23 +718,126 @@ const App = () => {
     'Cerdo', 'Pescado', 'Cordero', 'Quesos'
   ];
   const [ingredientesFavoritos, setIngredientesFavoritos] = React.useState<string[]>([]);
+  const [favoritos, setFavoritos] = React.useState<any[]>([]);
+
+  // Estados para guardar preferencias del usuario
+  const [savedRestricciones, setSavedRestricciones] = React.useState<string[]>([]);
+  const [savedIngredientesFavoritos, setSavedIngredientesFavoritos] = React.useState<string[]>([]);
+
+  // Función para cargar favoritos del usuario
+  const loadUserFavorites = async (userId: string) => {
+    try {
+      console.log('🔄 Cargando favoritos para usuario:', userId);
+      const result = await userRecipeService.getUserFavorites(userId);
+      console.log('📥 Resultado favoritos:', result);
+      
+      if (result.success && result.favorites) {
+        console.log('✅ Favoritos cargados:', result.favorites.length);
+        setFavoritos(result.favorites);
+        setUserFavorites(result.favorites);
+        return result.favorites;
+      } else {
+        console.log('⚠️ No hay favoritos o error en carga');
+        setFavoritos([]);
+        return [];
+      }
+    } catch (error) {
+      console.error('❌ Error cargando favoritos:', error);
+      setFavoritos([]);
+      return [];
+    }
+  };
+
+  // Función para guardar preferencias en PocketBase
+  const saveUserPreferences = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const preferences = {
+        restricciones: selectedRestricciones,
+        ingredientesFavoritos: ingredientesFavoritos,
+        ultimasBusquedas: ultimasBusquedas
+      };
+      
+      // Aquí podrías guardar en PocketBase si tienes una tabla de preferencias
+      console.log('Guardando preferencias:', preferences);
+      
+      // Por ahora guardar en estados locales
+      setSavedRestricciones(selectedRestricciones);
+      setSavedIngredientesFavoritos(ingredientesFavoritos);
+      
+      Alert.alert('✅ Preferencias', 'Preferencias guardadas correctamente');
+    } catch (error) {
+      console.error('Error guardando preferencias:', error);
+      Alert.alert('❌ Error', 'No se pudieron guardar las preferencias');
+    }
+  };
+
+  // Función para cargar preferencias guardadas
+  const loadUserPreferences = async () => {
+    if (!currentUser) return;
+    
+    try {
+      // Aquí cargarías desde PocketBase
+      // Por ahora usar estados locales
+      setSelectedRestricciones(savedRestricciones);
+      setIngredientesFavoritos(savedIngredientesFavoritos);
+    } catch (error) {
+      console.error('Error cargando preferencias:', error);
+    }
+  };
+
+  // Función para manejar favoritos con parámetro (versión simplificada)
+  const toggleFavoriteWithRecipe = async (recipe: any) => {
+    console.log('🔥 toggleFavoriteWithRecipe llamado con:', recipe.nombre);
+    
+    // Alert temporal para verificar que se llama la función
+    Alert.alert('🔥 Debug', `Función llamada para: ${recipe.nombre}`);
+    
+    console.log('👤 Usuario actual:', currentUser?.name);
+    console.log('❤️ Favoritos actuales:', favoritos.length);
+    
+    if (!currentUser) {
+      Alert.alert('Error', 'Debes iniciar sesión para guardar favoritos');
+      return;
+    }
+
+    // Actualizar inmediatamente la UI
+    const isFavorite = favoritos.some(f => f.id === recipe.id);
+    console.log('🤔 Es favorito?', isFavorite);
+    
+    if (isFavorite) {
+      // Remover inmediatamente de la UI
+      const newFavoritos = favoritos.filter(f => f.id !== recipe.id);
+      setFavoritos(newFavoritos);
+      console.log('🗑️ Removido de UI, nuevos favoritos:', newFavoritos.length);
+      Alert.alert('❤️ Favoritos', 'Receta removida de favoritos');
+    } else {
+      // Agregar inmediatamente a la UI
+      const newFavoritos = [...favoritos, recipe];
+      setFavoritos(newFavoritos);
+      console.log('❤️ Agregado a UI, nuevos favoritos:', newFavoritos.length);
+      Alert.alert('❤️ Favoritos', 'Receta agregada a favoritos');
+    }
+  };
 
   // Función para manejar login exitoso
   const handleLogin = async (user: any) => {
+    console.log('🚪 handleLogin llamado con usuario:', user);
     setCurrentUser(user);
     setIsLoggedIn(true);
     setNav('inicio');
     console.log('Login exitoso:', user.name);
+    console.log('Preferencias del usuario:', user.preferences);
     
     // Cargar favoritos del usuario
-    try {
-      const result = await userRecipeService.getUserFavorites(user.id);
-      if (result.success && result.favorites) {
-        setUserFavorites(result.favorites);
-      }
-    } catch (error) {
-      console.error('Error cargando favoritos:', error);
-    }
+    await loadUserFavorites(user.id);
+    
+    // Cargar preferencias guardadas
+    await loadUserPreferences();
+    
+    console.log('✅ Login completado, usuario actual guardado');
+    // Las recetas se cargarán automáticamente por el useEffect que detecta cambios en currentUser
   };
 
   // Función para cerrar sesión
@@ -556,6 +849,8 @@ const App = () => {
       setUserFavorites([]);
       setNav('inicio');
       Alert.alert('Sesión cerrada', 'Has cerrado sesión correctamente');
+      
+      // Las recetas se recargarán automáticamente por el useEffect que detecta cambios en currentUser
     } catch (error) {
       Alert.alert('Error', 'No se pudo cerrar sesión');
     }
@@ -599,17 +894,6 @@ const App = () => {
   }, [currentUser, selectedRecipe]);
 
   // Funciones para manejar favoritos
-  const loadUserFavorites = async (userId: string) => {
-    try {
-      const result = await userRecipeService.getUserFavorites(userId);
-      if (result.success) {
-        setUserFavorites(result.favorites || []);
-      }
-    } catch (error) {
-      console.error('Error cargando favoritos:', error);
-    }
-  };
-
   const checkIfFavorite = async (userId: string, recipeId: number) => {
     try {
       const result = await userRecipeService.isFavorite(userId, recipeId);
@@ -631,7 +915,7 @@ const App = () => {
         if (result.success) {
           setIsRecipeFavorite(false);
           loadUserFavorites(currentUser.id);
-          Alert.alert('Éxito', 'Receta removida de favoritos');
+          Alert.alert('❤️ Favoritos', 'Receta removida de favoritos');
         }
       } else {
         const result = await userRecipeService.addToFavorites(
@@ -643,10 +927,11 @@ const App = () => {
         if (result.success) {
           setIsRecipeFavorite(true);
           loadUserFavorites(currentUser.id);
-          Alert.alert('Éxito', 'Receta agregada a favoritos');
+          Alert.alert('💖 Favoritos', '¡Receta agregada a favoritos!');
         }
       }
     } catch (error) {
+      console.error('Error al actualizar favoritos:', error);
       Alert.alert('Error', 'No se pudo actualizar favoritos');
     }
   };
@@ -687,8 +972,6 @@ const App = () => {
     setSelectedRestricciones(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]);
   };
 
-  const recetasFiltradas = region === 'Todas' ? RECETAS : RECETAS.filter(r => r.region === region);
-
   const RECIPE_TABS = [
     { key: 'ingredientes', label: 'Ingredientes' },
     { key: 'pasos', label: 'Pasos' },
@@ -726,7 +1009,7 @@ const App = () => {
         </View>
         
         {/* Imagen de la receta */}
-        <Image source={recipe.img} style={styles.detailImage} />
+        <Image source={getRecipeImage(recipe)} style={styles.detailImage} />
         
         {/* Información rápida */}
         <View style={styles.detailInfoRow}>
@@ -748,11 +1031,24 @@ const App = () => {
           {/* Botón de favoritos */}
           {currentUser && (
             <TouchableOpacity 
-              style={[styles.favoriteButton, { backgroundColor: isRecipeFavorite ? regionColor : '#f0f0f0' }]}
+              style={[styles.favoriteButton, { 
+                backgroundColor: isRecipeFavorite ? regionColor : '#fff',
+                borderColor: regionColor,
+                borderWidth: isRecipeFavorite ? 0 : 2,
+                shadowColor: isRecipeFavorite ? regionColor : '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: isRecipeFavorite ? 0.3 : 0.1,
+                shadowRadius: 4,
+                elevation: isRecipeFavorite ? 6 : 2
+              }]}
               onPress={toggleFavorite}
+              activeOpacity={0.7}
             >
-              <Text style={[styles.favoriteIcon, { color: isRecipeFavorite ? '#fff' : regionColor }]}>
-                {isRecipeFavorite ? '❤️' : '🤍'}
+              <Text style={[styles.favoriteIcon, { 
+                color: isRecipeFavorite ? '#fff' : regionColor,
+                fontSize: 20
+              }]}>
+                {isRecipeFavorite ? '💖' : '🤍'}
               </Text>
             </TouchableOpacity>
           )}
@@ -794,7 +1090,12 @@ const App = () => {
                 </Text>
               </View>
               
-              {recipe.ingredientes?.map((ing: string, idx: number) => {
+              {!recipe.ingredientes || recipe.ingredientes.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No hay ingredientes disponibles para esta receta</Text>
+                </View>
+              ) : (
+                recipe.ingredientes.map((ing: string, idx: number) => {
                 const isChecked = checkedIngredients.has(idx);
                 
                 return (
@@ -831,7 +1132,8 @@ const App = () => {
                     </Text>
                   </View>
                 );
-              })}
+              })
+              )}
               
               {/* Botones de acción */}
               <View style={styles.detailButtonRow}>
@@ -921,7 +1223,7 @@ const App = () => {
                   {/* Imagen del Plato Principal */}
                   <View style={[styles.galleryItem, { borderColor: regionColor }]}>
                     <Image 
-                      source={IMAGENES_RECETAS[recipe.id] || IMAGENES_RECETAS[1]}
+                      source={getRecipeImage(recipe)}
                       style={styles.galleryMainImage}
                     />
                     <Text style={[styles.galleryLabel, { color: regionColor }]}>🍽️ Plato Principal</Text>
@@ -1065,7 +1367,7 @@ const App = () => {
                         <View style={styles.galleryRow}>
                           <TouchableOpacity style={[styles.foodGalleryItem, { borderColor: regionColor + '40' }]}>
                             <Image 
-                              source={IMAGENES_RECETAS[recipe.id] || IMAGENES_RECETAS[1]}
+                              source={getRecipeImage(recipe)}
                               style={styles.foodGalleryImage}
                             />
                             <View style={[styles.imageOverlay, { backgroundColor: regionColor + '90' }]}>
@@ -1285,101 +1587,249 @@ const App = () => {
               <Text style={styles.subtitle}>{region === 'Todas' ? 'Todas las regiones' : region}</Text>
             </View>
 
-            {/* Search Bar */}
+            {/* Search Bar mejorado */}
             <View style={styles.searchRow}>
               <TextInput
                 style={styles.searchInput}
                 placeholder="Buscar por nombre, región o ingrediente"
                 placeholderTextColor="#888"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
               <TouchableOpacity style={styles.filterButton}>
                 <Text style={{ fontSize: 20 }}>⚲</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Ingredientes */}
-            <Text style={styles.sectionLabel}>Ingredientes a incluir</Text>
-            <View style={styles.ingredientRow}>
-              {includedIngredients.map((ing, index) => (
-                <TouchableOpacity 
-                  key={index} 
-                  style={styles.ingredientTag}
-                  onPress={() => {
-                    setIncludedIngredients(includedIngredients.filter((_, i) => i !== index));
-                  }}
-                >
-                  <Text style={styles.ingredientText}>{ing} ✕</Text>
-                </TouchableOpacity>
-              ))}
-              <TextInput 
-                style={styles.ingredientInput} 
-                placeholder="Añadir ingrediente y Enter" 
-                placeholderTextColor="#888"
-                value={ingredientInput}
-                onChangeText={setIngredientInput}
-                onSubmitEditing={() => {
-                  if (ingredientInput.trim()) {
-                    setIncludedIngredients([...includedIngredients, ingredientInput.trim()]);
-                    setIngredientInput('');
-                  }
-                }}
-                returnKeyType="done"
-              />
-            </View>
-
-            {/* Filtros región con scroll horizontal */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.regionScroll} contentContainerStyle={{ paddingHorizontal: 10 }}>
-              <View style={styles.regionRow}>
-                {REGIONES.map(r => (
-                  <TouchableOpacity
-                    key={r}
-                    style={[
-                      region === r ? styles.regionButtonActive : styles.regionButton,
-                      { borderColor: getColorRegion(r), borderWidth: 2 },
-                      region === r && { backgroundColor: getColorRegion(r) }
-                    ]}
-                    onPress={() => setRegion(r)}
-                  >
-                    <Text style={[
-                      styles.regionButtonText,
-                      region === r && { color: '#fff' }
-                    ]}>{r}{region === r ? ' ✓' : ''}</Text>
-                  </TouchableOpacity>
-                ))}
+            {/* Búsquedas recientes */}
+            {ultimasBusquedas.length > 0 && searchQuery.length === 0 && (
+              <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#666', marginBottom: 8 }}>
+                  Búsquedas recientes:
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {ultimasBusquedas.map((busqueda, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      style={{
+                        backgroundColor: '#e3f2fd',
+                        borderRadius: 16,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        marginRight: 8,
+                        borderWidth: 1,
+                        borderColor: '#1976d2'
+                      }}
+                      onPress={() => setSearchQuery(busqueda)}
+                    >
+                      <Text style={{ fontSize: 13, color: '#1976d2', fontWeight: '500' }}>🔍 {busqueda}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
-            </ScrollView>
+            )}
 
+            {/* Resultados de búsqueda en tiempo real */}
+            {busquedaRecetas && (
+              <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 12 }}>
+                  {recetasFiltradas.length} resultado{recetasFiltradas.length !== 1 ? 's' : ''} encontrado{recetasFiltradas.length !== 1 ? 's' : ''}
+                </Text>
+                {recetasFiltradas.length === 0 ? (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 8 }}>
+                      🔍 No se encontraron recetas
+                    </Text>
+                    <Text style={{ fontSize: 14, color: '#888', textAlign: 'center' }}>
+                      Intenta con otros términos
+                    </Text>
+                  </View>
+                ) : (
+                  recetasFiltradas.slice(0, 5).map(r => (
+                    <TouchableOpacity 
+                      key={r.id} 
+                      onPress={() => { setSelectedRecipe(r); setActiveTab('ingredientes'); }}
+                      style={{
+                        backgroundColor: '#fff',
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 8,
+                        borderWidth: 1,
+                        borderColor: '#e0e0e0',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 2,
+                        elevation: 2
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Image source={getRecipeImage(r)} style={{ width: 50, height: 50, borderRadius: 8, marginRight: 12 }} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 2 }}>
+                            {r.nombre}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: '#666' }}>
+                            📍 {r.region}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={{
+                            padding: 6,
+                            borderRadius: 12,
+                            backgroundColor: favoritos.some(f => f.id === r.id) ? '#ffebee' : '#f5f5f5',
+                          }}
+                          onPress={() => toggleFavoriteWithRecipe(r)}
+                        >
+                          <Text style={{ 
+                            fontSize: 16,
+                            color: favoritos.some(f => f.id === r.id) ? '#e91e63' : '#bbb'
+                          }}>
+                            {favoritos.some(f => f.id === r.id) ? '❤️' : '🤍'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
+                {recetasFiltradas.length > 5 && (
+                  <TouchableOpacity 
+                    style={{ 
+                      backgroundColor: '#1976d2', 
+                      borderRadius: 8, 
+                      padding: 12, 
+                      alignItems: 'center', 
+                      marginTop: 8 
+                    }}
+                    onPress={() => setNav('buscar')}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '600' }}>
+                      Ver todos los {recetasFiltradas.length} resultados
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
 
-            {/* Destacados */}
-            <Text style={styles.sectionTitle}>★ Destacados</Text>
-            {RECETAS.filter(r => r.destacado && (region === 'Todas' || r.region === region)).map(r => (
-              <TouchableOpacity key={r.id} onPress={() => { setSelectedRecipe(r); setActiveTab('ingredientes'); }}>
-                <View style={[styles.recipeCard, { borderLeftColor: getColorRegion(r.region), borderLeftWidth: 4 }]}>
-                  <Image source={r.img} style={styles.recipeImage} />
-                  <View style={styles.recipeContent}>
-                    <Text style={styles.recipeTitle}>{r.nombre}</Text>
-                    <View style={styles.recipeInfoRow}>
-                      <Text style={[styles.recipeTag, { backgroundColor: getColorRegion(r.region) }]}>{r.region}</Text>
-                      <Text style={styles.recipeInfo}>★ 4.8</Text>
-                      <Text style={styles.recipeInfo}>⏱ 35m</Text>
-                      <Text style={styles.recipeInfo}>Fácil</Text>
-                    </View>
-                    <View style={styles.recipeInfoRow}>
-                      <Text style={styles.recipeInfo}>Desayuno</Text>
-                      <Text style={styles.recipeInfo}>Sin gluten</Text>
-                      <TouchableOpacity style={[styles.recipeButton, { backgroundColor: getColorRegion(r.region) }]}><Text style={styles.recipeButtonText}>Ver receta</Text></TouchableOpacity>
+            {/* Solo mostrar ingredientes y filtros si no hay búsqueda activa */}
+            {!busquedaRecetas && (
+              <>
+                {/* Ingredientes */}
+                <Text style={styles.sectionLabel}>Ingredientes a incluir</Text>
+                <View style={styles.ingredientRow}>
+                  {includedIngredients.map((ing, index) => (
+                    <TouchableOpacity 
+                      key={index} 
+                      style={styles.ingredientTag}
+                      onPress={() => {
+                        setIncludedIngredients(includedIngredients.filter((_, i) => i !== index));
+                      }}
+                    >
+                      <Text style={styles.ingredientText}>{ing} ✕</Text>
+                    </TouchableOpacity>
+                  ))}
+                  <TextInput 
+                    style={styles.ingredientInput} 
+                    placeholder="Añadir ingrediente y Enter" 
+                    placeholderTextColor="#888"
+                    value={ingredientInput}
+                    onChangeText={setIngredientInput}
+                    onSubmitEditing={() => {
+                      if (ingredientInput.trim()) {
+                        setIncludedIngredients([...includedIngredients, ingredientInput.trim()]);
+                        setIngredientInput('');
+                      }
+                    }}
+                    returnKeyType="done"
+                  />
+                </View>
+
+                {/* Filtros región con scroll horizontal */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.regionScroll} contentContainerStyle={{ paddingHorizontal: 10 }}>
+                  <View style={styles.regionRow}>
+                    {REGIONES.map(r => (
+                      <TouchableOpacity
+                        key={r}
+                        style={[
+                          region === r ? styles.regionButtonActive : styles.regionButton,
+                          { borderColor: getColorRegion(r), borderWidth: 2 },
+                          region === r && { backgroundColor: getColorRegion(r) }
+                        ]}
+                        onPress={() => setRegion(r)}
+                      >
+                        <Text style={[
+                          styles.regionButtonText,
+                          region === r && { color: '#fff' }
+                        ]}>{r}{region === r ? ' ✓' : ''}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </>
+            )}
+
+            {/* Solo mostrar destacados si no hay búsqueda activa */}
+            {!busquedaRecetas && (
+              <>
+                {/* Destacados dinámicos */}
+                <Text style={styles.sectionTitle}>★ Destacados</Text>
+            {recetasDestacadas.length > 0 ? (
+              recetasDestacadas.map(r => (
+                <TouchableOpacity key={r.id} onPress={() => { setSelectedRecipe(r); setActiveTab('ingredientes'); }}>
+                  <View style={[styles.recipeCard, { borderLeftColor: getColorRegion(r.region), borderLeftWidth: 4 }]}>
+                    <Image source={getRecipeImage(r)} style={styles.recipeImage} />
+                    <View style={styles.recipeContent}>
+                      <Text style={styles.recipeTitle}>{r.nombre}</Text>
+                      <View style={styles.recipeInfoRow}>
+                        <Text style={[styles.recipeTag, { backgroundColor: getColorRegion(r.region) }]}>{r.region}</Text>
+                        <Text style={styles.recipeInfo}>★ 4.8</Text>
+                        <Text style={styles.recipeInfo}>⏱ 35m</Text>
+                        <Text style={styles.recipeInfo}>Fácil</Text>
+                        {/* Botón de favoritos en destacados */}
+                        <TouchableOpacity
+                          style={{
+                            padding: 4,
+                            borderRadius: 12,
+                            backgroundColor: favoritos.some(f => f.id === r.id) ? '#ffebee' : '#f5f5f5',
+                            marginLeft: 'auto'
+                          }}
+                          onPress={() => toggleFavoriteWithRecipe(r)}
+                        >
+                          <Text style={{ 
+                            fontSize: 16,
+                            color: favoritos.some(f => f.id === r.id) ? '#e91e63' : '#bbb'
+                          }}>
+                            {favoritos.some(f => f.id === r.id) ? '❤️' : '🤍'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.recipeInfoRow}>
+                        <Text style={styles.recipeInfo}>Desayuno</Text>
+                        <Text style={styles.recipeInfo}>Sin gluten</Text>
+                        <TouchableOpacity style={[styles.recipeButton, { backgroundColor: getColorRegion(r.region), borderRadius: 8 }]}>
+                          <Text style={styles.recipeButtonText}>Ver receta</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Text style={{ fontSize: 16, color: '#666', textAlign: 'center' }}>
+                  🔄 Generando recomendaciones...
+                </Text>
+              </View>
+            )}
 
             {/* Todas las recetas */}
             <Text style={styles.sectionTitle}>🍳 Todas las recetas</Text>
             {recetasFiltradas.map(r => (
               <TouchableOpacity key={r.id} onPress={() => { setSelectedRecipe(r); setActiveTab('ingredientes'); }}>
                 <View style={[styles.recipeCard, { borderLeftColor: getColorRegion(r.region), borderLeftWidth: 4 }]}>
-                  <Image source={r.img} style={styles.recipeImage} />
+                  <Image source={getRecipeImage(r)} style={styles.recipeImage} />
                   <View style={styles.recipeContent}>
                     <Text style={styles.recipeTitle}>{r.nombre}</Text>
                     <View style={styles.recipeInfoRow}>
@@ -1397,6 +1847,8 @@ const App = () => {
                 </View>
               </TouchableOpacity>
             ))}
+              </>
+            )}
           </ScrollView>
         );
       case 'buscar':
@@ -1408,47 +1860,214 @@ const App = () => {
               <Text style={styles.subtitle}>Todas las regiones</Text>
             </View>
 
-            {/* Search Bar */}
+            {/* Search Bar mejorado */}
             <View style={styles.searchRow}>
               <TextInput
                 style={styles.searchInput}
                 placeholder="Busca recetas, ingredientes o técnicas"
                 placeholderTextColor="#888"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
               <TouchableOpacity style={styles.filterButton}>
                 <Text style={{ fontSize: 20 }}>⚲</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Ingredientes a incluir */}
-            <Text style={styles.sectionLabel}>Ingredientes a incluir</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
-              {includedIngredients.map((ing, idx) => (
-                <View key={idx} style={{ backgroundColor: '#f7f7f7', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginRight: 8, marginBottom: 4, flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 15, color: '#333', marginRight: 4 }}>{ing}</Text>
-                  <TouchableOpacity onPress={() => {
-                    const newArr = [...includedIngredients];
-                    newArr.splice(idx, 1);
-                    setIncludedIngredients(newArr);
-                  }}>
-                    <Text style={{ fontSize: 16, color: '#888' }}>✕</Text>
+            {/* Ingredientes sugeridos */}
+            {searchQuery.length > 0 && (
+              <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>Ingredientes sugeridos:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {ingredientesSugeridos
+                    .filter(ing => ing.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .slice(0, 8)
+                    .map((ing, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      style={{
+                        backgroundColor: '#e3f2fd',
+                        borderRadius: 16,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        marginRight: 8,
+                        borderWidth: 1,
+                        borderColor: '#2196f3'
+                      }}
+                      onPress={() => setSearchQuery(ing)}
+                    >
+                      <Text style={{ fontSize: 14, color: '#1976d2', fontWeight: '500' }}>{ing}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Resultados de búsqueda en tiempo real */}
+            {searchQuery.length > 0 && (
+              <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 12 }}>
+                  {recetasFiltradas.length} resultado{recetasFiltradas.length !== 1 ? 's' : ''} encontrado{recetasFiltradas.length !== 1 ? 's' : ''}
+                </Text>
+                {recetasFiltradas.map(r => (
+                  <TouchableOpacity 
+                    key={r.id} 
+                    onPress={() => { setSelectedRecipe(r); setActiveTab('ingredientes'); }}
+                    style={{
+                      backgroundColor: '#fff',
+                      borderRadius: 12,
+                      padding: 12,
+                      marginBottom: 8,
+                      borderWidth: 1,
+                      borderColor: '#e0e0e0',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 2,
+                      elevation: 2
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Image source={getRecipeImage(r)} style={{ width: 60, height: 60, borderRadius: 8, marginRight: 12 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 2 }}>
+                          {r.nombre}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
+                          📍 {r.region}
+                        </Text>
+                        <Text 
+                          style={{ fontSize: 12, color: '#888' }}
+                          numberOfLines={2}
+                        >
+                          {r.descripcion}
+                        </Text>
+                      </View>
+                      {/* Botón de favoritos en búsqueda - SIMPLIFICADO */}
+                      <TouchableOpacity
+                        style={{
+                          padding: 12,
+                          borderRadius: 20,
+                          backgroundColor: favoritos.some(f => f.id === r.id) ? '#ffebee' : '#f5f5f5',
+                          marginLeft: 8,
+                          minWidth: 44,
+                          minHeight: 44,
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                        onPress={() => {
+                          console.log('🔥 BOTÓN PRESIONADO para:', r.nombre);
+                          toggleFavoriteWithRecipe(r);
+                        }}
+                      >
+                        <Text style={{ 
+                          fontSize: 20,
+                          color: favoritos.some(f => f.id === r.id) ? '#e91e63' : '#bbb'
+                        }}>
+                          {favoritos.some(f => f.id === r.id) ? '❤️' : '🤍'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </TouchableOpacity>
-                </View>
-              ))}
-              <TextInput
-                style={[styles.ingredientInput, { minWidth: 120, flex: 1 }]}
-                placeholder="Añadir ingrediente y Enter"
-                placeholderTextColor="#888"
-                value={ingredientInput}
-                onChangeText={setIngredientInput}
-                onSubmitEditing={() => {
-                  if (ingredientInput.trim()) {
-                    setIncludedIngredients([...includedIngredients, ingredientInput.trim()]);
-                    setIngredientInput('');
-                  }
-                }}
-                returnKeyType="done"
-              />
+                ))}
+              </View>
+            )}
+
+            {/* Ingredientes a incluir mejorado */}
+            <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
+              <Text style={styles.sectionLabel}>Ingredientes a incluir</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+                {includedIngredients.map((ing, idx) => (
+                  <View key={idx} style={{ 
+                    backgroundColor: '#e8f5e8', 
+                    borderRadius: 16, 
+                    paddingHorizontal: 12, 
+                    paddingVertical: 6, 
+                    marginRight: 8, 
+                    marginBottom: 4, 
+                    flexDirection: 'row', 
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: '#4caf50'
+                  }}>
+                    <Text style={{ fontSize: 15, color: '#2e7d32', marginRight: 4, fontWeight: '500' }}>{ing}</Text>
+                    <TouchableOpacity onPress={() => {
+                      const newArr = [...includedIngredients];
+                      newArr.splice(idx, 1);
+                      setIncludedIngredients(newArr);
+                    }}>
+                      <Text style={{ fontSize: 16, color: '#2e7d32' }}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+              
+              {/* Input con sugerencias */}
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.ingredientInput, { 
+                    borderColor: '#4caf50',
+                    borderWidth: 1,
+                    backgroundColor: '#f9f9f9'
+                  }]}
+                  placeholder="Escribe para ver sugerencias..."
+                  placeholderTextColor="#888"
+                  value={ingredientInput}
+                  onChangeText={setIngredientInput}
+                  onSubmitEditing={() => {
+                    if (ingredientInput.trim() && !includedIngredients.includes(ingredientInput.trim())) {
+                      setIncludedIngredients([...includedIngredients, ingredientInput.trim()]);
+                      setIngredientInput('');
+                    }
+                  }}
+                  returnKeyType="done"
+                />
+                
+                {/* Sugerencias de ingredientes */}
+                {ingredientInput.length > 0 && (
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    style={{ marginTop: 8 }}
+                  >
+                    {ingredientesSugeridos
+                      .filter(ing => 
+                        ing.toLowerCase().includes(ingredientInput.toLowerCase()) && 
+                        !includedIngredients.includes(ing)
+                      )
+                      .slice(0, 6)
+                      .map((ing, idx) => (
+                      <TouchableOpacity
+                        key={idx}
+                        style={{
+                          backgroundColor: '#fff',
+                          borderRadius: 12,
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          marginRight: 8,
+                          borderWidth: 1,
+                          borderColor: '#4caf50',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 2,
+                          elevation: 1
+                        }}
+                        onPress={() => {
+                          if (!includedIngredients.includes(ing)) {
+                            setIncludedIngredients([...includedIngredients, ing]);
+                            setIngredientInput('');
+                          }
+                        }}
+                      >
+                        <Text style={{ fontSize: 14, color: '#2e7d32', fontWeight: '500' }}>+ {ing}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
             </View>
 
             {/* Ingredientes a excluir */}
@@ -1482,7 +2101,7 @@ const App = () => {
             {recetasFiltradas.map(r => (
               <TouchableOpacity key={r.id} onPress={() => { setSelectedRecipe(r); setActiveTab('ingredientes'); }}>
                 <View style={[styles.recipeCard, { borderLeftColor: getColorRegion(r.region), borderLeftWidth: 4 }]}> 
-                  <Image source={r.img} style={styles.recipeImage} />
+                  <Image source={getRecipeImage(r)} style={styles.recipeImage} />
                   <View style={styles.recipeContent}>
                     <Text style={styles.recipeTitle}>{r.nombre}</Text>
                     <View style={styles.recipeInfoRow}>
@@ -1909,6 +2528,64 @@ const App = () => {
               </View>
             </View>
 
+            {/* Recetas Favoritas */}
+            <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#f0f0f0', marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Text style={{ fontSize: 22, color: '#FF6B8A', marginRight: 8 }}>💖</Text>
+                <Text style={{ fontWeight: '700', fontSize: 18 }}>Mis Recetas Favoritas</Text>
+              </View>
+              <Text style={{ color: '#666', fontSize: 14, marginBottom: 16 }}>
+                {userFavorites.length === 0 ? 'Aún no tienes recetas favoritas' : `${userFavorites.length} recetas guardadas`}
+              </Text>
+              
+              {userFavorites.length === 0 ? (
+                <View style={{ alignItems: 'center', padding: 20 }}>
+                  <Text style={{ fontSize: 40, marginBottom: 10 }}>🤍</Text>
+                  <Text style={{ fontSize: 16, color: '#999', textAlign: 'center' }}>
+                    Explora las recetas y toca el corazón para agregarlas a favoritos
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {userFavorites.map((favorite, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={{
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: 12,
+                        padding: 12,
+                        marginRight: 12,
+                        width: 160,
+                        borderWidth: 1,
+                        borderColor: '#e9ecef'
+                      }}
+                      onPress={() => {
+                        // Buscar la receta completa y mostrarla
+                        const fullRecipe = RECETAS_ACTIVAS.find(r => r.id == favorite.recipe_id || r.nombre === favorite.recipe_name);
+                        if (fullRecipe) {
+                          setSelectedRecipe(fullRecipe);
+                          setActiveTab('ingredientes');
+                        }
+                      }}
+                    >
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 4 }}>
+                        {favorite.recipe_name}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
+                        📍 {favorite.recipe_region}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 20, marginRight: 4 }}>💖</Text>
+                        <Text style={{ fontSize: 12, color: '#FF6B8A', fontWeight: '500' }}>
+                          Favorita
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+
             {/* Ingredientes favoritos */}
             <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#f0f0f0', marginBottom: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
@@ -1950,6 +2627,31 @@ const App = () => {
                   </View>
                 ))}
               </View>
+
+              {/* Botón para guardar ingredientes favoritos */}
+              <TouchableOpacity 
+                style={{
+                  backgroundColor: '#218c4a',
+                  borderRadius: 12,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  marginTop: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3
+                }}
+                onPress={saveUserPreferences}
+              >
+                <Text style={{ fontSize: 18, marginRight: 8 }}>💾</Text>
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>
+                  Guardar Ingredientes Favoritos
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Nivel de dificultad */}
@@ -2045,6 +2747,53 @@ const App = () => {
                   ))
                 )}
               </View>
+
+              {/* Botón para guardar preferencias */}
+              <TouchableOpacity 
+                style={{
+                  backgroundColor: '#4caf50',
+                  borderRadius: 12,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  marginTop: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3
+                }}
+                onPress={saveUserPreferences}
+              >
+                <Text style={{ fontSize: 18, marginRight: 8 }}>💾</Text>
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>
+                  Guardar Preferencias
+                </Text>
+              </TouchableOpacity>
+
+              {/* Botón para cargar preferencias guardadas */}
+              {(savedRestricciones.length > 0 || savedIngredientesFavoritos.length > 0) && (
+                <TouchableOpacity 
+                  style={{
+                    backgroundColor: '#2196f3',
+                    borderRadius: 12,
+                    paddingVertical: 10,
+                    paddingHorizontal: 16,
+                    marginTop: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onPress={loadUserPreferences}
+                >
+                  <Text style={{ fontSize: 16, marginRight: 8 }}>📥</Text>
+                  <Text style={{ color: '#fff', fontWeight: '500', fontSize: 14 }}>
+                    Cargar Últimas Preferencias
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Historial y guardados */}
@@ -3653,6 +4402,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.6)',
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    borderRadius: 10,
+    margin: 10,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    borderRadius: 10,
+    margin: 10,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
   },
 });
 

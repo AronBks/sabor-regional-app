@@ -3,6 +3,7 @@ import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, ScrollView, Fla
 import { authService } from '../src/pocketbase';
 import { userRecipeService } from '../src/userRecipeService';
 import AuthComponent from './AuthComponent';
+import UserPreferencesComponent from './UserPreferencesComponent';
 
 // Componente del perfil con autenticación simplificada
 const PerfilScreen = () => {
@@ -18,7 +19,7 @@ const PerfilScreen = () => {
   // Estados para favoritos y actividad
   const [userFavorites, setUserFavorites] = useState<any[]>([]);
   const [userActivity, setUserActivity] = useState<any[]>([]);
-  const [activeSection, setActiveSection] = useState<'profile' | 'favorites' | 'activity'>('profile');
+  const [activeSection, setActiveSection] = useState<'profile' | 'preferences' | 'favorites' | 'activity'>('profile');
 
   // Verificar usuario autenticado al iniciar
   useEffect(() => {
@@ -109,6 +110,15 @@ const PerfilScreen = () => {
               </Text>
             </TouchableOpacity>
             
+            <TouchableOpacity 
+              style={[styles.navButton, activeSection === 'preferences' && styles.navButtonActive]}
+              onPress={() => setActiveSection('preferences')}
+            >
+              <Text style={[styles.navButtonText, activeSection === 'preferences' && styles.navButtonTextActive]}>
+                ⚙️ Preferencias
+              </Text>
+            </TouchableOpacity>
+            
             {!user.isGuest && (
               <>
                 <TouchableOpacity 
@@ -179,6 +189,13 @@ const PerfilScreen = () => {
                   </View>
                 </View>
               </View>
+            )}
+
+            {activeSection === 'preferences' && (
+              <UserPreferencesComponent 
+                userId={user.id} 
+                userName={user.name || user.email} 
+              />
             )}
 
             {activeSection === 'favorites' && (
