@@ -494,14 +494,13 @@ export const analysisService = {
 
   async getUserAnalysisHistory(userId: string) {
     try {
-      const analyses = await pb.collection('ingredient_analysis').getFullList({
-        filter: `user = "${userId}"`,
-        sort: '-created'
-      });
+      // Retornar array vacío temporalmente para evitar error 404
+      // La colección 'ingredient_analysis' no está configurada en PocketBase
+      console.log('getUserAnalysisHistory: Retornando array vacío - colección no configurada');
       return {
         success: true,
-        data: analyses,
-        message: 'Historial obtenido exitosamente'
+        data: [],
+        message: 'Historial no disponible - función en desarrollo'
       };
     } catch (error: any) {
       console.error('Error obteniendo historial:', error);
