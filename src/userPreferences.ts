@@ -1,142 +1,207 @@
-// Servicio para manejar las preferencias del usuario
-import PocketBase from 'pocketbase';
-
-const pb = new PocketBase('http://10.0.2.2:8090');
-
+// Tipos para las preferencias del usuario
 export interface UserPreferences {
-  // Restricciones dietéticas
-  glutenFree: boolean;
-  vegetarian: boolean;
-  vegan: boolean;
-  lactoseFree: boolean;
-  keto: boolean;
-  lowCarb: boolean;
-  
-  // Preferencias culinarias
-  spicyLevel: 'none' | 'mild' | 'medium' | 'hot' | 'very_hot';
-  cuisineTypes: string[]; // ['italiana', 'peruana', 'mexicana', etc.]
-  ingredientLikes: string[]; // ingredientes favoritos
-  ingredientDislikes: string[]; // ingredientes que no le gustan
-  
-  // Configuraciones de la app
-  language: 'español' | 'english';
-  notifications: boolean;
-  theme: 'light' | 'dark' | 'auto';
-  
-  // Información nutricional
-  dailyCalorieGoal?: number;
-  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
-  
-  // Regiones favoritas
-  favoriteRegions: string[]; // ['andina', 'costa', 'selva', etc.]
+  ingredientesFavoritos: string[];
+  difficulty: {
+    facil: boolean;
+    intermedio: boolean;
+    avanzado: boolean;
+  };
+  restricciones: string[];
+  ultimasBusquedas: string[];
+  theme?: 'light' | 'dark';
+  notificaciones?: boolean;
 }
 
-export const userPreferencesService = {
-  // Obtener las preferencias del usuario
-  async getUserPreferences(userId: string): Promise<{ success: boolean; preferences?: UserPreferences; error?: string }> {
-    try {
-      const record = await pb.collection('users').getOne(userId);
-      
-      // Si no tiene preferencias guardadas, devolver valores por defecto
-      const defaultPreferences: UserPreferences = {
-        glutenFree: false,
-        vegetarian: false,
-        vegan: false,
-        lactoseFree: false,
-        keto: false,
-        lowCarb: false,
-        spicyLevel: 'mild',
-        cuisineTypes: [],
-        ingredientLikes: [],
-        ingredientDislikes: [],
-        language: 'español',
-        notifications: true,
-        theme: 'light',
-        activityLevel: 'moderate',
-        favoriteRegions: []
-      };
-
-      const preferences = record.preferences || defaultPreferences;
-      
-      return { success: true, preferences };
-    } catch (error) {
-      console.error('Error obteniendo preferencias:', error);
-      return { success: false, error: 'Error al cargar preferencias' };
-    }
+// Preferencias por defecto
+const DEFAULT_PREFERENCES: UserPreferences = {
+  ingredientesFavoritos: [],
+  difficulty: {
+    facil: true,
+    intermedio: false,
+    avanzado: false
   },
+  restricciones: [],
+  ultimasBusquedas: [],
+  theme: 'light',
+  notificaciones: true
+};
 
-  // Guardar las preferencias del usuario
-  async saveUserPreferences(userId: string, preferences: UserPreferences): Promise<{ success: boolean; error?: string }> {
-    try {
-      await pb.collection('users').update(userId, {
-        preferences: preferences
-      });
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Error guardando preferencias:', error);
-      return { success: false, error: 'Error al guardar preferencias' };
-    }
-  },
+// Clave para el almacenamiento local
+const PREFERENCES_KEY = 'user_preferences';
 
-  // Actualizar una preferencia específica
-  async updatePreference(userId: string, key: keyof UserPreferences, value: any): Promise<{ success: boolean; error?: string }> {
-    try {
-      const result = await this.getUserPreferences(userId);
-      if (!result.success || !result.preferences) {
-        return { success: false, error: 'No se pudieron cargar las preferencias actuales' };
-      }
-
-      const updatedPreferences = {
-        ...result.preferences,
-        [key]: value
-      };
-
-      return await this.saveUserPreferences(userId, updatedPreferences);
-    } catch (error) {
-      console.error('Error actualizando preferencia:', error);
-      return { success: false, error: 'Error al actualizar preferencia' };
-    }
-  },
-
-  // Agregar/quitar región favorita
-  async toggleFavoriteRegion(userId: string, region: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      const result = await this.getUserPreferences(userId);
-      if (!result.success || !result.preferences) {
-        return { success: false, error: 'No se pudieron cargar las preferencias' };
-      }
-
-      const currentRegions = result.preferences.favoriteRegions || [];
-      const newRegions = currentRegions.includes(region)
-        ? currentRegions.filter(r => r !== region)
-        : [...currentRegions, region];
-
-      return await this.updatePreference(userId, 'favoriteRegions', newRegions);
-    } catch (error) {
-      console.error('Error actualizando región favorita:', error);
-      return { success: false, error: 'Error al actualizar región favorita' };
-    }
-  },
-
-  // Agregar/quitar ingrediente favorito
-  async toggleIngredientLike(userId: string, ingredient: string, isLike: boolean = true): Promise<{ success: boolean; error?: string }> {
-    try {
-      const result = await this.getUserPreferences(userId);
-      if (!result.success || !result.preferences) {
-        return { success: false, error: 'No se pudieron cargar las preferencias' };
-      }
-
-      const field = isLike ? 'ingredientLikes' : 'ingredientDislikes';
-      const currentList = result.preferences[field] || [];
-      const newList = currentList.includes(ingredient)
-        ? currentList.filter(i => i !== ingredient)
-        : [...currentList, ingredient];
-
-      return await this.updatePreference(userId, field, newList);
-    } catch (error) {
-      console.error('Error actualizando ingrediente:', error);
-      return { success: false, error: 'Error al actualizar ingrediente' };
-    }
+// Función para guardar preferencias
+export const savePreferences = async (preferences: UserPreferences): Promise<boolean> => {
+  try {
+    console.log('💾 Guardando preferencias:', preferences);
+    
+    // Para React Native sin AsyncStorage, usar almacenamiento en memoria simulado
+    // En una app real usarías AsyncStorage.setItem
+    const jsonValue = JSON.stringify(preferences);
+    
+    // Simulamos el almacenamiento local
+    (global as any).userPreferences = jsonValue;
+    
+    console.log('✅ Preferencias guardadas correctamente');
+    return true;
+  } catch (error) {
+    console.error('❌ Error guardando preferencias:', error);
+    return false;
   }
+};
+
+// Función para cargar preferencias
+export const loadPreferences = async (): Promise<UserPreferences> => {
+  try {
+    console.log('📂 Cargando preferencias...');
+    
+    // Simulamos la carga desde almacenamiento local
+    const jsonValue = (global as any).userPreferences;
+    
+    if (jsonValue != null) {
+      const preferences = JSON.parse(jsonValue);
+      console.log('✅ Preferencias cargadas:', preferences);
+      
+      // Combinar con valores por defecto para asegurar que no falten propiedades
+      return { ...DEFAULT_PREFERENCES, ...preferences };
+    }
+    
+    console.log('📋 Usando preferencias por defecto');
+    return DEFAULT_PREFERENCES;
+  } catch (error) {
+    console.error('❌ Error cargando preferencias:', error);
+    return DEFAULT_PREFERENCES;
+  }
+};
+
+// Función para resetear preferencias
+export const resetPreferences = async (): Promise<boolean> => {
+  try {
+    console.log('🔄 Reseteando preferencias...');
+    
+    // Eliminar del almacenamiento simulado
+    (global as any).userPreferences = undefined;
+    
+    console.log('✅ Preferencias reseteadas');
+    return true;
+  } catch (error) {
+    console.error('❌ Error reseteando preferencias:', error);
+    return false;
+  }
+};
+
+// Función para actualizar una preferencia específica
+export const updatePreference = async <K extends keyof UserPreferences>(
+  key: K, 
+  value: UserPreferences[K]
+): Promise<boolean> => {
+  try {
+    const currentPreferences = await loadPreferences();
+    const updatedPreferences = {
+      ...currentPreferences,
+      [key]: value
+    };
+    
+    return await savePreferences(updatedPreferences);
+  } catch (error) {
+    console.error(`❌ Error actualizando preferencia ${key}:`, error);
+    return false;
+  }
+};
+
+// Función para filtrar recetas basadas en preferencias
+export const filterRecipesByPreferences = (
+  recipes: any[], 
+  preferences: UserPreferences
+): any[] => {
+  if (!recipes || recipes.length === 0) return recipes;
+  
+  console.log('🔍 Filtrando', recipes.length, 'recetas con preferencias:', preferences);
+  
+  return recipes.filter(recipe => {
+    // Filtrar por dificultad
+    const difficultyMatch = (
+      (preferences.difficulty.facil && recipe.dificultad === 'Fácil') ||
+      (preferences.difficulty.intermedio && recipe.dificultad === 'Intermedio') ||
+      (preferences.difficulty.avanzado && recipe.dificultad === 'Avanzado')
+    );
+    
+    if (!difficultyMatch) {
+      console.log('❌ Receta', recipe.nombre, 'no coincide con dificultad preferida');
+      return false;
+    }
+    
+    // Filtrar por ingredientes favoritos (boost)
+    const hasPreferredIngredients = preferences.ingredientesFavoritos.length === 0 || 
+      preferences.ingredientesFavoritos.some(fav => 
+        recipe.ingredientes?.some((ing: string) => 
+          ing.toLowerCase().includes(fav.toLowerCase())
+        )
+      );
+    
+    // Filtrar por restricciones alimentarias
+    const meetsRestrictions = preferences.restricciones.length === 0 || 
+      preferences.restricciones.every(restriction => {
+        // Lógica específica para restricciones
+        switch (restriction) {
+          case 'Vegetariano':
+            return recipe.categoria !== 'Carnes y Aves';
+          case 'Vegano':
+            return !recipe.ingredientes?.some((ing: string) => 
+              /carne|pollo|pescado|huevo|leche|queso|mantequilla/i.test(ing)
+            );
+          case 'Sin Gluten':
+            return !recipe.ingredientes?.some((ing: string) => 
+              /harina|pan|pasta|trigo/i.test(ing)
+            );
+          case 'Sin Lactosa':
+            return !recipe.ingredientes?.some((ing: string) => 
+              /leche|queso|mantequilla|crema/i.test(ing)
+            );
+          default:
+            return true;
+        }
+      });
+    
+    if (!meetsRestrictions) {
+      console.log('❌ Receta', recipe.nombre, 'no cumple restricciones');
+      return false;
+    }
+    
+    console.log('✅ Receta', recipe.nombre, 'pasa todos los filtros');
+    return true;
+  });
+};
+
+// Función para ordenar recetas por preferencias
+export const sortRecipesByPreferences = (
+  recipes: any[], 
+  preferences: UserPreferences
+): any[] => {
+  if (!recipes || recipes.length === 0) return recipes;
+  
+  return [...recipes].sort((a, b) => {
+    let scoreA = 0;
+    let scoreB = 0;
+    
+    // Puntos por ingredientes favoritos
+    preferences.ingredientesFavoritos.forEach(fav => {
+      if (a.ingredientes?.some((ing: string) => ing.toLowerCase().includes(fav.toLowerCase()))) {
+        scoreA += 10;
+      }
+      if (b.ingredientes?.some((ing: string) => ing.toLowerCase().includes(fav.toLowerCase()))) {
+        scoreB += 10;
+      }
+    });
+    
+    // Puntos por dificultad preferida
+    if (preferences.difficulty.facil && a.dificultad === 'Fácil') scoreA += 5;
+    if (preferences.difficulty.intermedio && a.dificultad === 'Intermedio') scoreA += 5;
+    if (preferences.difficulty.avanzado && a.dificultad === 'Avanzado') scoreA += 5;
+    
+    if (preferences.difficulty.facil && b.dificultad === 'Fácil') scoreB += 5;
+    if (preferences.difficulty.intermedio && b.dificultad === 'Intermedio') scoreB += 5;
+    if (preferences.difficulty.avanzado && b.dificultad === 'Avanzado') scoreB += 5;
+    
+    return scoreB - scoreA; // Orden descendente
+  });
 };
