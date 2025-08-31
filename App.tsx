@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, Linking, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, Linking, Alert, ActivityIndicator, PermissionsAndroid, Platform } from 'react-native';
+import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType } from 'react-native-image-picker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { Switch } from 'react-native';
 import SimpleLogin from './components/SimpleLogin';
@@ -8,6 +9,7 @@ import { analysisService, initializePocketBase } from './src/pocketbase';
 import { userRecipeService } from './src/userRecipeService';
 import simpleAuthService from './src/simpleAuth';
 import recetasService, { RecetaForApp } from './src/recetasFromDB';
+import ingredientRecognitionService, { DetectedIngredient } from './src/ingredientRecognition';
 
 // Helpers para YouTube
 /** Extrae el ID de YouTube de de varios formatos: watch?v=, youtu.be, embed, shorts */
@@ -673,6 +675,26 @@ const App = () => {
   const [busquedaRecetas, setBusquedaRecetas] = useState(false);
   const [recetasDestacadas, setRecetasDestacadas] = useState<any[]>([]);
   const [ultimasBusquedas, setUltimasBusquedas] = useState<string[]>([]);
+
+  // Estados para la lista de compras
+  const [newItemText, setNewItemText] = useState('');
+  const [shoppingList, setShoppingList] = useState<{
+    [categoria: string]: Array<{
+      id: string;
+      nombre: string;
+      cantidad: string;
+      checked: boolean;
+      fechaAgregado: string;
+      origen?: string; // 'manual' | nombre de la receta
+    }>
+  }>({});
+
+  // Estados para reconocimiento de ingredientes
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [detectedIngredients, setDetectedIngredients] = useState<DetectedIngredient[]>([]);
+  const [suggestedRecipes, setSuggestedRecipes] = useState<any[]>([]);
+  const [analysisHistory, setAnalysisHistory] = useState<any[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
   // Lista de ingredientes populares para sugerencias
   const [ingredientesSugeridos] = useState([
@@ -681,6 +703,374 @@ const App = () => {
     'Cilantro', 'Culantro', 'Ají', 'Cúrcuma', 'Comino', 'Orégano', 'Plátano',
     'Yuca', 'Camote', 'Maíz', 'Quinua', 'Zapallo', 'Zanahoria', 'Rocoto'
   ]);
+
+  // Funciones para manejo de lista de compras
+  // Por ahora usaremos almacenamiento en memoria (estado local)
+  // TODO: Implementar persistencia cuando AsyncStorage esté configurado
+
+  // Categorías para organizar la lista de compras
+  const CATEGORIAS_INGREDIENTES = {
+    'Frutas y verduras': ['tomate', 'cebolla', 'ajo', 'limón', 'papa', 'zanahoria', 'zapallo', 'yuca', 'camote', 'plátano', 'cilantro', 'culantro', 'ají', 'rocoto'],
+    'Carnes y pescados': ['pollo', 'carne', 'pescado', 'res', 'cerdo', 'pavo', 'cordero'],
+    'Lácteos': ['queso', 'leche', 'mantequilla', 'yogur', 'crema'],
+    'Cereales y granos': ['arroz', 'quinua', 'maíz', 'harina', 'avena', 'trigo'],
+    'Condimentos y especias': ['sal', 'pimienta', 'aceite', 'cúrcuma', 'comino', 'orégano', 'vinagre'],
+    'Otros': []
+  };
+
+  // Función para determinar la categoría de un ingrediente
+  const determinarCategoria = (ingrediente: string): string => {
+    const ingredienteLower = ingrediente.toLowerCase();
+    
+    for (const [categoria, items] of Object.entries(CATEGORIAS_INGREDIENTES)) {
+      if (items.some(item => ingredienteLower.includes(item))) {
+        return categoria;
+      }
+    }
+    return 'Otros';
+  };
+
+  // Cargar lista de compras (por ahora solo inicializa vacía)
+  const cargarListaDeCompras = async () => {
+    try {
+      // TODO: Implementar carga desde almacenamiento persistente
+      console.log('Lista de compras inicializada');
+    } catch (error) {
+      console.error('Error cargando lista de compras:', error);
+    }
+  };
+
+  // Guardar lista de compras (por ahora solo actualiza el estado)
+  const guardarListaDeCompras = async (nuevaLista: typeof shoppingList) => {
+    try {
+      // TODO: Implementar guardado en almacenamiento persistente
+      setShoppingList(nuevaLista);
+      console.log('Lista de compras actualizada');
+    } catch (error) {
+      console.error('Error guardando lista de compras:', error);
+    }
+  };
+
+  // Agregar artículo manual a la lista
+  const agregarItemManual = async () => {
+    if (!newItemText.trim()) return;
+
+    const categoria = determinarCategoria(newItemText);
+    const nuevoItem = {
+      id: Date.now().toString(),
+      nombre: newItemText.trim(),
+      cantidad: '1 unidad',
+      checked: false,
+      fechaAgregado: new Date().toISOString(),
+      origen: 'manual'
+    };
+
+    const nuevaLista = { ...shoppingList };
+    if (!nuevaLista[categoria]) {
+      nuevaLista[categoria] = [];
+    }
+    nuevaLista[categoria].push(nuevoItem);
+
+    await guardarListaDeCompras(nuevaLista);
+    setNewItemText('');
+  };
+
+  // Agregar ingredientes de una receta a la lista
+  const agregarIngredientesDeReceta = async (receta: any) => {
+    const ingredientes = getRecipeIngredients(receta);
+    const nuevaLista = { ...shoppingList };
+
+    for (const ingrediente of ingredientes) {
+      const categoria = determinarCategoria(ingrediente);
+      const nuevoItem = {
+        id: `${Date.now()}-${Math.random()}`,
+        nombre: ingrediente,
+        cantidad: getIngredientAmount(),
+        checked: false,
+        fechaAgregado: new Date().toISOString(),
+        origen: receta.nombre
+      };
+
+      if (!nuevaLista[categoria]) {
+        nuevaLista[categoria] = [];
+      }
+
+      // Verificar si el ingrediente ya existe
+      const yaExiste = nuevaLista[categoria].some(item => 
+        item.nombre.toLowerCase() === ingrediente.toLowerCase()
+      );
+
+      if (!yaExiste) {
+        nuevaLista[categoria].push(nuevoItem);
+      }
+    }
+
+    await guardarListaDeCompras(nuevaLista);
+    Alert.alert(
+      '✅ Ingredientes agregados',
+      `Se agregaron los ingredientes de "${receta.nombre}" a tu lista de compras.`,
+      [{ text: 'Ver lista', onPress: () => setNav('lista') }, { text: 'OK' }]
+    );
+  };
+
+  // Marcar/desmarcar item como completado
+  const toggleItemChecked = async (categoria: string, itemId: string) => {
+    const nuevaLista = { ...shoppingList };
+    const item = nuevaLista[categoria]?.find(i => i.id === itemId);
+    if (item) {
+      item.checked = !item.checked;
+      await guardarListaDeCompras(nuevaLista);
+    }
+  };
+
+  // Eliminar item de la lista
+  const eliminarItem = async (categoria: string, itemId: string) => {
+    const nuevaLista = { ...shoppingList };
+    if (nuevaLista[categoria]) {
+      nuevaLista[categoria] = nuevaLista[categoria].filter(item => item.id !== itemId);
+      // Si la categoría queda vacía, eliminarla
+      if (nuevaLista[categoria].length === 0) {
+        delete nuevaLista[categoria];
+      }
+      await guardarListaDeCompras(nuevaLista);
+    }
+  };
+
+  // Limpiar items marcados
+  const limpiarMarcados = async () => {
+    const nuevaLista = { ...shoppingList };
+    
+    for (const categoria of Object.keys(nuevaLista)) {
+      nuevaLista[categoria] = nuevaLista[categoria].filter(item => !item.checked);
+      if (nuevaLista[categoria].length === 0) {
+        delete nuevaLista[categoria];
+      }
+    }
+    
+    await guardarListaDeCompras(nuevaLista);
+  };
+
+  // Compartir lista de compras
+  const compartirLista = () => {
+    let textoLista = '🛒 LISTA DE COMPRAS - Sabor Regional\n\n';
+    
+    for (const [categoria, items] of Object.entries(shoppingList)) {
+      if (items.length > 0) {
+        textoLista += `📂 ${categoria.toUpperCase()}\n`;
+        items.forEach(item => {
+          const check = item.checked ? '✅' : '⬜';
+          textoLista += `${check} ${item.nombre} - ${item.cantidad}\n`;
+        });
+        textoLista += '\n';
+      }
+    }
+    
+    textoLista += '🍽️ Generado con Sabor Regional App';
+    
+    Alert.alert(
+      'Compartir Lista',
+      'Elige cómo compartir tu lista de compras:',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Copiar texto', onPress: () => {
+          Alert.alert('📋', 'Texto de la lista preparado para copiar:\n\n' + textoLista);
+        }},
+        { text: 'WhatsApp', onPress: () => {
+          const url = `whatsapp://send?text=${encodeURIComponent(textoLista)}`;
+          Linking.openURL(url).catch(() => {
+            Alert.alert('Error', 'No se pudo abrir WhatsApp');
+          });
+        }}
+      ]
+    );
+  };
+
+  // Funciones para reconocimiento de ingredientes
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        // Solicitar múltiples permisos
+        const grants = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        ]);
+
+        const cameraGranted = grants[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED;
+        const storageGranted = grants[PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE] === PermissionsAndroid.RESULTS.GRANTED || 
+                               grants[PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE] === PermissionsAndroid.RESULTS.GRANTED;
+
+        return cameraGranted && storageGranted;
+      } catch (err) {
+        console.warn('Error solicitando permisos:', err);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleImageAnalysis = async (fromCamera: boolean = true) => {
+    try {
+      setAnalysisLoading(true);
+      
+      const options = {
+        mediaType: 'photo' as MediaType,
+        includeBase64: true,
+        maxHeight: 2000,
+        maxWidth: 2000,
+        quality: 0.8 as any, // Fix para TypeScript
+      };
+
+      if (fromCamera) {
+        // Para cámara, verificar permisos primero
+        const permission = await requestCameraPermission();
+        if (!permission) {
+          Alert.alert('Permiso requerido', 'Se necesita permiso de cámara para esta función');
+          setAnalysisLoading(false);
+          return;
+        }
+        
+        launchCamera(options, (res) => {
+          handleImagePickerResponse(res);
+        });
+      } else {
+        // Para galería, lanzar directamente (no necesita permisos especiales)
+        launchImageLibrary(options, (res) => {
+          handleImagePickerResponse(res);
+        });
+      }
+    } catch (error) {
+      console.error('Error en análisis de imagen:', error);
+      setAnalysisLoading(false);
+      Alert.alert('Error', 'No se pudo procesar la imagen');
+    }
+  };
+
+  const handleImagePickerResponse = async (response: ImagePickerResponse) => {
+    try {
+      // Verificar si el usuario canceló o hay error
+      if (response.didCancel) {
+        console.log('Usuario canceló la selección');
+        setAnalysisLoading(false);
+        return;
+      }
+
+      if (response.errorCode) {
+        console.error('Error en image picker:', response.errorMessage);
+        Alert.alert('Error', response.errorMessage || 'Error al seleccionar imagen');
+        setAnalysisLoading(false);
+        return;
+      }
+
+      // Verificar que tenemos assets
+      if (!response.assets || response.assets.length === 0) {
+        console.log('No hay assets en la respuesta');
+        Alert.alert('Error', 'No se pudo obtener la imagen seleccionada');
+        setAnalysisLoading(false);
+        return;
+      }
+
+      const asset = response.assets[0];
+      
+      // Mostrar la imagen seleccionada
+      if (asset.uri) {
+        setSelectedImage(asset.uri);
+        console.log('Imagen seleccionada:', asset.uri);
+      }
+
+      // Procesar si tenemos base64
+      if (asset.base64) {
+        console.log('Iniciando análisis de imagen...');
+        
+        try {
+          // Analizar imagen con el servicio de reconocimiento
+          const analysisResult = await ingredientRecognitionService.analyzeImage(asset.base64);
+          
+          if (analysisResult.success) {
+            console.log('Análisis exitoso:', analysisResult);
+            setDetectedIngredients(analysisResult.ingredients);
+            setSuggestedRecipes(analysisResult.suggestedRecipes || []);
+            
+            // Agregar al historial
+            const newHistoryItem = {
+              id: analysisResult.analysisId,
+              timestamp: analysisResult.timestamp,
+              created: new Date().toISOString(),
+              detected_ingredients: analysisResult.ingredients.map(ing => ing.spanish_name || ing.name),
+              suggested_recipes: analysisResult.suggestedRecipes || [],
+              provider: analysisResult.provider
+            };
+            
+            setAnalysisHistory(prev => [newHistoryItem, ...prev.slice(0, 9)]); // Mantener solo 10 elementos
+            
+            Alert.alert(
+              '✨ ¡Análisis completado!',
+              `Se detectaron ${analysisResult.ingredients.length} ingredientes usando ${analysisResult.provider}.`,
+              [
+                { text: 'Ver resultados', onPress: () => {} },
+                { text: 'OK' }
+              ]
+            );
+          } else {
+            console.log('Análisis sin resultados:', analysisResult.error);
+            Alert.alert(
+              'Sin resultados',
+              analysisResult.error || 'No se pudieron detectar ingredientes en la imagen. Intenta con una imagen más clara.',
+              [{ text: 'OK' }]
+            );
+          }
+        } catch (error) {
+          console.error('Error en análisis:', error);
+          Alert.alert('Error', 'Hubo un problema al analizar la imagen. Verifica tu conexión a internet.');
+        }
+      } else {
+        console.log('No hay base64 en el asset');
+        Alert.alert('Error', 'No se pudo procesar la imagen. Intenta nuevamente.');
+      }
+    } catch (error) {
+      console.error('Error general en handleImagePickerResponse:', error);
+      Alert.alert('Error', 'Error inesperado al procesar la imagen');
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
+  const handleSelectSuggestedRecipe = (recipe: any) => {
+    // Buscar la receta en nuestra base de datos local
+    const foundRecipe = RECETAS_ACTIVAS.find(r => 
+      r.nombre.toLowerCase().includes(recipe.title.toLowerCase()) ||
+      recipe.title.toLowerCase().includes(r.nombre.toLowerCase())
+    );
+    
+    if (foundRecipe) {
+      setSelectedRecipe(foundRecipe);
+      setActiveTab('ingredientes');
+    } else {
+      // Crear una receta temporal con los datos sugeridos
+      const tempRecipe = {
+        id: Date.now(),
+        nombre: recipe.title,
+        region: 'Todas',
+        descripcion: recipe.description || 'Receta sugerida por análisis de ingredientes',
+        ingredientes: recipe.ingredients || recipe.matchedIngredients || [],
+        pasos: [`Preparar los ingredientes detectados`, `Seguir técnica de cocción apropiada`],
+        tiempo_preparacion: recipe.prep_time || 30,
+        dificultad: recipe.difficulty || 'Medio',
+        porciones: 4,
+        destacado: false,
+        img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop'
+      };
+      
+      setSelectedRecipe(tempRecipe as any);
+      setActiveTab('ingredientes');
+    }
+  };
+
+  const clearAnalysisResults = () => {
+    setDetectedIngredients([]);
+    setSuggestedRecipes([]);
+    setSelectedImage(null);
+  };
   
   // Inicializar PocketBase al cargar la app
   useEffect(() => {
@@ -701,6 +1091,9 @@ const App = () => {
       }
     };
     setupPocketBase();
+    
+    // Inicializar lista de compras (sin persistencia por ahora)
+    cargarListaDeCompras();
   }, []);
   
   // Cargar recetas desde PocketBase
@@ -832,12 +1225,6 @@ const App = () => {
   useEffect(() => {
     setCheckedIngredients(new Set());
   }, [selectedRecipe]);
-  
-  // Estados para análisis de ingredientes con PocketBase
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [detectedIngredients, setDetectedIngredients] = useState<any[]>([]);
-  const [suggestedRecipes, setSuggestedRecipes] = useState<any[]>([]);
-  const [analysisHistory, setAnalysisHistory] = useState<any[]>([]);
   
   // Estados existentes
   const [includedIngredients, setIncludedIngredients] = useState<string[]>([]);
@@ -1069,33 +1456,6 @@ const App = () => {
     }
   };
 
-  // Función para simular análisis de imagen
-  const handleImageAnalysis = async () => {
-    if (!currentUser) return;
-    
-    setAnalysisLoading(true);
-    
-    try {
-      // Simular URI de imagen (en producción vendría de la cámara/galería)
-      const mockImageUri = 'data:image/jpeg;base64,mock_image_data';
-      
-      const result = await IngredientAnalysisService.analyzeImage(mockImageUri, currentUser.id);
-      
-      if (result.success && result.ingredients) {
-        setDetectedIngredients(result.ingredients);
-        setSuggestedRecipes(result.suggestedRecipes || []);
-        await loadAnalysisHistory(); // Recargar historial
-        Alert.alert('¡Análisis completado!', `Se detectaron ${result.ingredients.length} ingredientes`);
-      } else {
-        Alert.alert('Error', result.error || 'No se pudo analizar la imagen');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo analizar la imagen');
-    } finally {
-      setAnalysisLoading(false);
-    }
-  };
-
   // Funciones para manejo de dificultad y restricciones
   const toggleDifficulty = (key: 'facil' | 'intermedio' | 'avanzado') => {
     setDifficulty(prev => ({ ...prev, [key]: !prev[key] }));
@@ -1268,7 +1628,10 @@ const App = () => {
               
               {/* Botones de acción */}
               <View style={styles.detailButtonRow}>
-                <TouchableOpacity style={[styles.addListButton, { backgroundColor: regionColor }]}>
+                <TouchableOpacity 
+                  style={[styles.addListButton, { backgroundColor: regionColor }]}
+                  onPress={() => agregarIngredientesDeReceta(recipe)}
+                >
                   <Text style={styles.addListButtonText}>🛒 Agregar todos a la lista</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.pdfButton, { borderColor: regionColor }]}>
@@ -2157,7 +2520,7 @@ const App = () => {
 
                 {/* Área de imagen/cámara */}
                 <TouchableOpacity
-                  onPress={handleImageAnalysis}
+                  onPress={() => handleImageAnalysis(true)}
                   disabled={analysisLoading}
                   style={{ 
                     backgroundColor: analysisLoading ? '#f0f0f0' : '#f8f9fa', 
@@ -2171,7 +2534,13 @@ const App = () => {
                     alignItems: 'center'
                   }}
                 >
-                  {analysisLoading ? (
+                  {selectedImage ? (
+                    <Image 
+                      source={{ uri: selectedImage }} 
+                      style={{ width: '100%', height: '100%', borderRadius: 14 }}
+                      resizeMode="cover"
+                    />
+                  ) : analysisLoading ? (
                     <>
                       <ActivityIndicator size="large" color="#ff6a00" />
                       <Text style={{ color: '#666', fontSize: 16, fontWeight: '500', marginTop: 8 }}>Analizando imagen...</Text>
@@ -2180,7 +2549,7 @@ const App = () => {
                     <>
                       <Text style={{ fontSize: 48, marginBottom: 8 }}>📸</Text>
                       <Text style={{ color: '#666', fontSize: 16, fontWeight: '500', marginBottom: 4 }}>Toca para tomar foto</Text>
-                      <Text style={{ color: '#999', fontSize: 14 }}>o arrastra una imagen aquí</Text>
+                      <Text style={{ color: '#999', fontSize: 14 }}>o selecciona de galería</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -2188,7 +2557,7 @@ const App = () => {
                 {/* Botones de acción */}
                 <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
                   <TouchableOpacity 
-                    onPress={handleImageAnalysis}
+                    onPress={() => handleImageAnalysis(true)}
                     disabled={analysisLoading}
                     style={{
                       flex: 1,
@@ -2207,7 +2576,7 @@ const App = () => {
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
-                    onPress={handleImageAnalysis}
+                    onPress={() => handleImageAnalysis(false)}
                     disabled={analysisLoading}
                     style={{
                       flex: 1,
@@ -2223,6 +2592,24 @@ const App = () => {
                     <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Galería</Text>
                   </TouchableOpacity>
                 </View>
+
+                {/* Botón para limpiar resultados */}
+                {(detectedIngredients.length > 0 || selectedImage) && (
+                  <TouchableOpacity 
+                    onPress={clearAnalysisResults}
+                    style={{
+                      backgroundColor: '#f8f9fa',
+                      borderRadius: 8,
+                      padding: 10,
+                      alignItems: 'center',
+                      marginBottom: 16,
+                      borderWidth: 1,
+                      borderColor: '#dee2e6'
+                    }}
+                  >
+                    <Text style={{ color: '#6c757d', fontSize: 14, fontWeight: '500' }}>🗑️ Limpiar análisis</Text>
+                  </TouchableOpacity>
+                )}
 
                 {/* Resultado del análisis */}
                 {detectedIngredients.length > 0 && (
@@ -2261,18 +2648,22 @@ const App = () => {
                   </Text>
                   
                   {suggestedRecipes.slice(0, 3).map((receta, idx) => (
-                    <TouchableOpacity key={idx} style={{
-                      backgroundColor: '#fff',
-                      borderRadius: 12,
-                      padding: 16,
-                      marginBottom: 12,
-                      borderWidth: 1,
-                      borderColor: '#eee',
-                      elevation: 2,
-                      shadowColor: '#000',
-                      shadowOpacity: 0.05,
-                      shadowRadius: 4
-                    }}>
+                    <TouchableOpacity 
+                      key={idx} 
+                      style={{
+                        backgroundColor: '#fff',
+                        borderRadius: 12,
+                        padding: 16,
+                        marginBottom: 12,
+                        borderWidth: 1,
+                        borderColor: '#eee',
+                        elevation: 2,
+                        shadowColor: '#000',
+                        shadowOpacity: 0.05,
+                        shadowRadius: 4
+                      }}
+                      onPress={() => handleSelectSuggestedRecipe(receta)}
+                    >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                         <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#333', flex: 1 }}>
                           {receta.title || `Receta ${idx + 1}`}
@@ -2283,9 +2674,9 @@ const App = () => {
                           </Text>
                         </View>
                       </View>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                         <Text style={{ color: '#666', fontSize: 14 }}>
-                          📝 {receta.ingredients?.length || 4} ingredientes
+                          📝 {receta.ingredients?.length || receta.matchedIngredients?.length || 4} ingredientes
                         </Text>
                         <Text style={{ color: '#666', fontSize: 14 }}>
                           ⏱️ {receta.prep_time || 15} min
@@ -2295,10 +2686,23 @@ const App = () => {
                         </Text>
                       </View>
                       {receta.description && (
-                        <Text style={{ color: '#888', fontSize: 13, marginTop: 8 }}>
+                        <Text style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>
                           {receta.description.substring(0, 100)}...
                         </Text>
                       )}
+                      {receta.matchedIngredients && receta.matchedIngredients.length > 0 && (
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                          <Text style={{ color: '#666', fontSize: 12, marginBottom: 4 }}>Coincidencias:</Text>
+                          {receta.matchedIngredients.map((ing: string, i: number) => (
+                            <View key={i} style={{ backgroundColor: '#e8f5e8', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                              <Text style={{ color: '#28a745', fontSize: 11, fontWeight: '500' }}>{ing}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      <View style={{ alignItems: 'center', marginTop: 12 }}>
+                        <Text style={{ color: '#ff6a00', fontSize: 14, fontWeight: 'bold' }}>👆 Toca para ver receta completa</Text>
+                      </View>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -2365,150 +2769,237 @@ const App = () => {
           <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
             <View style={styles.header}>
               <Text style={styles.title}>Lista de Compras</Text>
-              <Text style={styles.subtitle}>Ingredientes organizados</Text>
+              <Text style={styles.subtitle}>
+                {Object.values(shoppingList).reduce((total, items) => total + items.length, 0)} artículos • {' '}
+                {Object.values(shoppingList).reduce((total, items) => total + items.filter(item => item.checked).length, 0)} completados
+              </Text>
             </View>
             
             {/* Agregar nuevo artículo */}
             <View style={{ flexDirection: 'row', marginHorizontal: 16, marginTop: 16, marginBottom: 20 }}>
               <TextInput 
-                style={[styles.ingredientInput, { flex: 1, backgroundColor: '#f7f7f7', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: '#ddd' }]} 
+                style={[styles.ingredientInput, { 
+                  flex: 1, 
+                  backgroundColor: '#f7f7f7', 
+                  borderRadius: 12, 
+                  paddingHorizontal: 16, 
+                  paddingVertical: 12, 
+                  borderWidth: 1, 
+                  borderColor: '#ddd' 
+                }]} 
                 placeholder="Agregar artículo" 
                 placeholderTextColor="#888" 
+                value={newItemText}
+                onChangeText={setNewItemText}
+                onSubmitEditing={agregarItemManual}
+                returnKeyType="done"
               />
-              <TouchableOpacity style={{ backgroundColor: '#ff6a00', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 12, marginLeft: 8 }}>
+              <TouchableOpacity 
+                style={{ 
+                  backgroundColor: '#ff6a00', 
+                  borderRadius: 12, 
+                  paddingHorizontal: 18, 
+                  paddingVertical: 12, 
+                  marginLeft: 8,
+                  opacity: newItemText.trim() ? 1 : 0.5
+                }}
+                onPress={agregarItemManual}
+                disabled={!newItemText.trim()}
+              >
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>Añadir</Text>
               </TouchableOpacity>
             </View>
 
             {/* Lista de compras por categorías */}
-            {[
-              {
-                categoria: 'Frutas y verduras',
-                items: [
-                  { nombre: 'Tomate', cantidad: '2 kg', checked: false },
-                  { nombre: 'Cebolla', cantidad: '1 kg', checked: false },
-                  { nombre: 'Limón', cantidad: '6 unidades', checked: true },
-                ],
-              },
-              {
-                categoria: 'Carnes y pescados',
-                items: [
-                  { nombre: 'Pollo', cantidad: '500g', checked: false },
-                  { nombre: 'Pescado', cantidad: '300g', checked: false },
-                ],
-              },
-              {
-                categoria: 'Lácteos',
-                items: [
-                  { nombre: 'Leche', cantidad: '1 litro', checked: true },
-                  { nombre: 'Queso fresco', cantidad: '200g', checked: false },
-                ],
-              },
-            ].map(cat => (
-              <View key={cat.categoria} style={{ marginTop: 20, marginHorizontal: 16 }}>
-                <Text style={{ fontWeight: 'bold', color: '#333', marginBottom: 12, fontSize: 18 }}>{cat.categoria}</Text>
-                {cat.items.map((item, idx) => (
-                  <View key={item.nombre} style={{ 
-                    flexDirection: 'row', 
-                    alignItems: 'center', 
-                    backgroundColor: '#fff', 
-                    borderRadius: 12, 
-                    borderWidth: 1, 
-                    borderColor: '#eee', 
-                    marginBottom: 8, 
-                    padding: 16,
-                    shadowColor: '#000',
-                    shadowOpacity: 0.02,
-                    shadowRadius: 2,
-                    elevation: 1,
+            {Object.keys(shoppingList).length === 0 ? (
+              <View style={{ 
+                alignItems: 'center', 
+                paddingVertical: 60,
+                paddingHorizontal: 20
+              }}>
+                <Text style={{ fontSize: 60, marginBottom: 16 }}>🛒</Text>
+                <Text style={{ 
+                  fontSize: 18, 
+                  fontWeight: 'bold', 
+                  color: '#333', 
+                  marginBottom: 8,
+                  textAlign: 'center'
+                }}>
+                  Tu lista está vacía
+                </Text>
+                <Text style={{ 
+                  fontSize: 14, 
+                  color: '#666',
+                  textAlign: 'center',
+                  lineHeight: 20
+                }}>
+                  Agrega ingredientes manualmente o desde las recetas para empezar tu lista de compras
+                </Text>
+              </View>
+            ) : (
+              Object.entries(shoppingList).map(([categoria, items]) => (
+                <View key={categoria} style={{ marginTop: 20, marginHorizontal: 16 }}>
+                  <Text style={{ 
+                    fontWeight: 'bold', 
+                    color: '#333', 
+                    marginBottom: 12, 
+                    fontSize: 18 
                   }}>
-                    {/* Checkbox circular */}
-                    <TouchableOpacity style={{ 
-                      width: 24, 
-                      height: 24, 
-                      borderRadius: 12, 
-                      borderWidth: 2, 
-                      borderColor: item.checked ? '#ff6a00' : '#ddd', 
-                      justifyContent: 'center', 
+                    {categoria} ({items.length})
+                  </Text>
+                  {items.map((item) => (
+                    <View key={item.id} style={{ 
+                      flexDirection: 'row', 
                       alignItems: 'center', 
-                      marginRight: 16, 
-                      backgroundColor: item.checked ? '#ff6a00' : 'transparent' 
+                      backgroundColor: '#fff', 
+                      borderRadius: 12, 
+                      borderWidth: 1, 
+                      borderColor: '#eee', 
+                      marginBottom: 8, 
+                      padding: 16,
+                      shadowColor: '#000',
+                      shadowOpacity: 0.02,
+                      shadowRadius: 2,
+                      elevation: 1,
                     }}>
-                      {item.checked && (
-                        <Text style={{ color: '#fff', fontSize: 14, fontWeight: 'bold' }}>✓</Text>
-                      )}
-                    </TouchableOpacity>
-                    
-                    {/* Contenido del item */}
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ 
-                        fontSize: 16, 
-                        color: item.checked ? '#999' : '#333', 
-                        textDecorationLine: item.checked ? 'line-through' : 'none',
-                        fontWeight: item.checked ? '400' : '500',
-                        marginBottom: 2
-                      }}>{item.nombre}</Text>
-                      <Text style={{ 
-                        fontSize: 14, 
-                        color: item.checked ? '#bbb' : '#666'
-                      }}>{item.cantidad}</Text>
-                    </View>
-                    
-                    {/* Botones de cantidad */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <TouchableOpacity style={{ 
-                        width: 32, 
-                        height: 32, 
-                        borderRadius: 16, 
-                        backgroundColor: '#f5f5f5', 
-                        justifyContent: 'center', 
-                        alignItems: 'center',
-                        marginHorizontal: 4
-                      }}>
-                        <Text style={{ color: '#ff6a00', fontSize: 18, fontWeight: 'bold' }}>−</Text>
+                      {/* Checkbox circular */}
+                      <TouchableOpacity 
+                        style={{ 
+                          width: 24, 
+                          height: 24, 
+                          borderRadius: 12, 
+                          borderWidth: 2, 
+                          borderColor: item.checked ? '#ff6a00' : '#ddd', 
+                          justifyContent: 'center', 
+                          alignItems: 'center', 
+                          marginRight: 16, 
+                          backgroundColor: item.checked ? '#ff6a00' : 'transparent' 
+                        }}
+                        onPress={() => toggleItemChecked(categoria, item.id)}
+                      >
+                        {item.checked && (
+                          <Text style={{ color: '#fff', fontSize: 14, fontWeight: 'bold' }}>✓</Text>
+                        )}
                       </TouchableOpacity>
                       
-                      <TouchableOpacity style={{ 
-                        width: 32, 
-                        height: 32, 
-                        borderRadius: 16, 
-                        backgroundColor: '#f5f5f5', 
-                        justifyContent: 'center', 
-                        alignItems: 'center',
-                        marginHorizontal: 4
-                      }}>
-                        <Text style={{ color: '#ff6a00', fontSize: 18, fontWeight: 'bold' }}>+</Text>
+                      {/* Contenido del item */}
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ 
+                          fontSize: 16, 
+                          color: item.checked ? '#999' : '#333', 
+                          textDecorationLine: item.checked ? 'line-through' : 'none',
+                          fontWeight: item.checked ? '400' : '500',
+                          marginBottom: 2
+                        }}>
+                          {item.nombre}
+                        </Text>
+                        <Text style={{ 
+                          fontSize: 14, 
+                          color: item.checked ? '#bbb' : '#666'
+                        }}>
+                          {item.cantidad}
+                        </Text>
+                        {item.origen && item.origen !== 'manual' && (
+                          <Text style={{ 
+                            fontSize: 12, 
+                            color: '#ff6a00',
+                            fontStyle: 'italic',
+                            marginTop: 2
+                          }}>
+                            📝 De: {item.origen}
+                          </Text>
+                        )}
+                      </View>
+                      
+                      {/* Botón eliminar */}
+                      <TouchableOpacity 
+                        style={{ 
+                          width: 32, 
+                          height: 32, 
+                          borderRadius: 16, 
+                          backgroundColor: '#f5f5f5', 
+                          justifyContent: 'center', 
+                          alignItems: 'center',
+                          marginLeft: 8
+                        }}
+                        onPress={() => {
+                          Alert.alert(
+                            'Eliminar artículo',
+                            `¿Estás seguro de eliminar "${item.nombre}" de tu lista?`,
+                            [
+                              { text: 'Cancelar', style: 'cancel' },
+                              { 
+                                text: 'Eliminar', 
+                                style: 'destructive',
+                                onPress: () => eliminarItem(categoria, item.id)
+                              }
+                            ]
+                          );
+                        }}
+                      >
+                        <Text style={{ color: '#ff4444', fontSize: 16, fontWeight: 'bold' }}>×</Text>
                       </TouchableOpacity>
                     </View>
-                  </View>
-                ))}
-              </View>
-            ))}
+                  ))}
+                </View>
+              ))
+            )}
 
             {/* Botones de acción */}
-            <View style={{ flexDirection: 'row', marginHorizontal: 16, marginTop: 24, marginBottom: 20 }}>
-              <TouchableOpacity style={{ 
-                flex: 1, 
-                backgroundColor: '#ff6a00', 
-                borderRadius: 12, 
-                padding: 16, 
-                marginRight: 8,
-                alignItems: 'center'
-              }}>
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Compartir Lista</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={{ 
-                flex: 1, 
-                backgroundColor: '#fff', 
-                borderRadius: 12, 
-                padding: 16, 
-                borderWidth: 1, 
-                borderColor: '#ddd',
-                alignItems: 'center'
-              }}>
-                <Text style={{ color: '#222', fontWeight: 'bold', fontSize: 16 }}>Limpiar marcados</Text>
-              </TouchableOpacity>
-            </View>
+            {Object.keys(shoppingList).length > 0 && (
+              <View style={{ flexDirection: 'row', marginHorizontal: 16, marginTop: 24, marginBottom: 20 }}>
+                <TouchableOpacity 
+                  style={{ 
+                    flex: 1, 
+                    backgroundColor: '#ff6a00', 
+                    borderRadius: 12, 
+                    padding: 16, 
+                    marginRight: 8,
+                    alignItems: 'center'
+                  }}
+                  onPress={compartirLista}
+                >
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Compartir Lista</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={{ 
+                    flex: 1, 
+                    backgroundColor: '#fff', 
+                    borderRadius: 12, 
+                    padding: 16, 
+                    borderWidth: 1, 
+                    borderColor: '#ddd',
+                    alignItems: 'center'
+                  }}
+                  onPress={() => {
+                    const itemsMarcados = Object.values(shoppingList).reduce(
+                      (total, items) => total + items.filter(item => item.checked).length, 
+                      0
+                    );
+                    
+                    if (itemsMarcados === 0) {
+                      Alert.alert('Sin elementos', 'No hay artículos marcados para limpiar.');
+                      return;
+                    }
+                    
+                    Alert.alert(
+                      'Limpiar marcados',
+                      `¿Eliminar ${itemsMarcados} artículo${itemsMarcados !== 1 ? 's' : ''} marcado${itemsMarcados !== 1 ? 's' : ''}?`,
+                      [
+                        { text: 'Cancelar', style: 'cancel' },
+                        { 
+                          text: 'Limpiar', 
+                          style: 'destructive',
+                          onPress: limpiarMarcados
+                        }
+                      ]
+                    );
+                  }}
+                >
+                  <Text style={{ color: '#222', fontWeight: 'bold', fontSize: 16 }}>Limpiar marcados</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </ScrollView>
         );
       case 'perfil':
