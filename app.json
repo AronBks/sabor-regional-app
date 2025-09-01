@@ -1,48 +1,4 @@
 {
-  "expo": {
-    "name": "Sabor Regional",
-    "slug": "sabor-regional-recetas",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.saborregional.recetas"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
-      },
-      "package": "com.saborregional.recetas",
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_EXTERNAL_STORAGE"
-      ]
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "La app accede a fotos para reconocer ingredientes.",
-          "cameraPermission": "La app accede a la cámara para tomar fotos de ingredientes."
-        }
-      ]
-    ]
-  },
   "name": "recetas",
-  "displayName": "Sabor Regional"
+  "displayName": "recetas"
 }

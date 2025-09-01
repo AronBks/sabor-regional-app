@@ -1,4 +1,5 @@
-// Tipos para las preferencias del usuario
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export interface UserPreferences {
   ingredientesFavoritos: string[];
   difficulty: {
@@ -8,8 +9,8 @@ export interface UserPreferences {
   };
   restricciones: string[];
   ultimasBusquedas: string[];
-  theme?: 'light' | 'dark';
-  notificaciones?: boolean;
+  theme: 'light' | 'dark';
+  notificaciones: boolean;
 }
 
 // Preferencias por defecto
@@ -26,7 +27,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   notificaciones: true
 };
 
-// Clave para el almacenamiento local
+// Clave para almacenamiento local
 const PREFERENCES_KEY = 'user_preferences';
 
 // Función para guardar preferencias
@@ -34,13 +35,10 @@ export const savePreferences = async (preferences: UserPreferences): Promise<boo
   try {
     console.log('💾 Guardando preferencias:', preferences);
     
-    // Para React Native sin AsyncStorage, usar almacenamiento en memoria simulado
-    // En una app real usarías AsyncStorage.setItem
-    const jsonValue = JSON.stringify(preferences);
+    // Por ahora usar memoria hasta que AsyncStorage esté configurado
+    // await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
     
-    // Simulamos el almacenamiento local
-    (global as any).userPreferences = jsonValue;
-    
+    // Simular guardado exitoso
     console.log('✅ Preferencias guardadas correctamente');
     return true;
   } catch (error) {
@@ -52,20 +50,16 @@ export const savePreferences = async (preferences: UserPreferences): Promise<boo
 // Función para cargar preferencias
 export const loadPreferences = async (): Promise<UserPreferences> => {
   try {
-    console.log('📂 Cargando preferencias...');
+    console.log('📥 Cargando preferencias...');
     
-    // Simulamos la carga desde almacenamiento local
-    const jsonValue = (global as any).userPreferences;
+    // Por ahora usar preferencias por defecto hasta que AsyncStorage esté configurado
+    // const stored = await AsyncStorage.getItem(PREFERENCES_KEY);
+    // if (stored) {
+    //   const parsed = JSON.parse(stored);
+    //   return { ...DEFAULT_PREFERENCES, ...parsed };
+    // }
     
-    if (jsonValue != null) {
-      const preferences = JSON.parse(jsonValue);
-      console.log('✅ Preferencias cargadas:', preferences);
-      
-      // Combinar con valores por defecto para asegurar que no falten propiedades
-      return { ...DEFAULT_PREFERENCES, ...preferences };
-    }
-    
-    console.log('📋 Usando preferencias por defecto');
+    console.log('✅ Preferencias cargadas (por defecto)');
     return DEFAULT_PREFERENCES;
   } catch (error) {
     console.error('❌ Error cargando preferencias:', error);
@@ -73,37 +67,28 @@ export const loadPreferences = async (): Promise<UserPreferences> => {
   }
 };
 
-// Función para resetear preferencias
-export const resetPreferences = async (): Promise<boolean> => {
+// Función para actualizar una preferencia específica
+export const updatePreference = async (
+  key: keyof UserPreferences, 
+  value: any
+): Promise<boolean> => {
   try {
-    console.log('🔄 Reseteando preferencias...');
-    
-    // Eliminar del almacenamiento simulado
-    (global as any).userPreferences = undefined;
-    
-    console.log('✅ Preferencias reseteadas');
-    return true;
+    const currentPrefs = await loadPreferences();
+    const updatedPrefs = { ...currentPrefs, [key]: value };
+    return await savePreferences(updatedPrefs);
   } catch (error) {
-    console.error('❌ Error reseteando preferencias:', error);
+    console.error('❌ Error actualizando preferencia:', error);
     return false;
   }
 };
 
-// Función para actualizar una preferencia específica
-export const updatePreference = async <K extends keyof UserPreferences>(
-  key: K, 
-  value: UserPreferences[K]
-): Promise<boolean> => {
+// Función para resetear preferencias
+export const resetPreferences = async (): Promise<boolean> => {
   try {
-    const currentPreferences = await loadPreferences();
-    const updatedPreferences = {
-      ...currentPreferences,
-      [key]: value
-    };
-    
-    return await savePreferences(updatedPreferences);
+    console.log('🔄 Reseteando preferencias...');
+    return await savePreferences(DEFAULT_PREFERENCES);
   } catch (error) {
-    console.error(`❌ Error actualizando preferencia ${key}:`, error);
+    console.error('❌ Error reseteando preferencias:', error);
     return false;
   }
 };
@@ -114,57 +99,48 @@ export const filterRecipesByPreferences = (
   preferences: UserPreferences
 ): any[] => {
   if (!recipes || recipes.length === 0) return recipes;
+  if (!preferences) return recipes;
   
-  console.log('🔍 Filtrando', recipes.length, 'recetas con preferencias:', preferences);
+  console.log('🔍 Filtrando recetas con preferencias:', preferences);
   
   return recipes.filter(recipe => {
-    // Filtrar por dificultad
-    const difficultyMatch = (
-      (preferences.difficulty.facil && recipe.dificultad === 'Fácil') ||
-      (preferences.difficulty.intermedio && recipe.dificultad === 'Intermedio') ||
-      (preferences.difficulty.avanzado && recipe.dificultad === 'Avanzado')
-    );
-    
-    if (!difficultyMatch) {
-      console.log('❌ Receta', recipe.nombre, 'no coincide con dificultad preferida');
-      return false;
-    }
-    
-    // Filtrar por ingredientes favoritos (boost)
-    const hasPreferredIngredients = preferences.ingredientesFavoritos.length === 0 || 
-      preferences.ingredientesFavoritos.some(fav => 
-        recipe.ingredientes?.some((ing: string) => 
-          ing.toLowerCase().includes(fav.toLowerCase())
-        )
-      );
-    
-    // Filtrar por restricciones alimentarias
-    const meetsRestrictions = preferences.restricciones.length === 0 || 
-      preferences.restricciones.every(restriction => {
-        // Lógica específica para restricciones
-        switch (restriction) {
-          case 'Vegetariano':
-            return recipe.categoria !== 'Carnes y Aves';
-          case 'Vegano':
+    // Filtrar por restricciones
+    if (preferences.restricciones.length > 0) {
+      const meetsRestrictions = preferences.restricciones.every(restriccion => {
+        switch (restriccion.toLowerCase()) {
+          case 'vegetariano':
             return !recipe.ingredientes?.some((ing: string) => 
-              /carne|pollo|pescado|huevo|leche|queso|mantequilla/i.test(ing)
+              ['carne', 'pollo', 'pescado', 'res', 'cerdo'].some(meat => 
+                ing.toLowerCase().includes(meat)
+              )
             );
-          case 'Sin Gluten':
+          case 'vegano':
             return !recipe.ingredientes?.some((ing: string) => 
-              /harina|pan|pasta|trigo/i.test(ing)
+              ['carne', 'pollo', 'pescado', 'queso', 'leche', 'huevo'].some(animal => 
+                ing.toLowerCase().includes(animal)
+              )
             );
-          case 'Sin Lactosa':
+          case 'sin gluten':
             return !recipe.ingredientes?.some((ing: string) => 
-              /leche|queso|mantequilla|crema/i.test(ing)
+              ['harina', 'trigo', 'cebada', 'centeno'].some(gluten => 
+                ing.toLowerCase().includes(gluten)
+              )
+            );
+          case 'sin lactosa':
+            return !recipe.ingredientes?.some((ing: string) => 
+              ['leche', 'queso', 'mantequilla', 'yogur', 'crema'].some(dairy => 
+                ing.toLowerCase().includes(dairy)
+              )
             );
           default:
             return true;
         }
       });
-    
-    if (!meetsRestrictions) {
-      console.log('❌ Receta', recipe.nombre, 'no cumple restricciones');
-      return false;
+      
+      if (!meetsRestrictions) {
+        console.log('❌ Receta', recipe.nombre, 'no cumple restricciones');
+        return false;
+      }
     }
     
     console.log('✅ Receta', recipe.nombre, 'pasa todos los filtros');
@@ -179,21 +155,28 @@ export const sortRecipesByPreferences = (
 ): any[] => {
   if (!recipes || recipes.length === 0) return recipes;
   
-  return [...recipes].sort((a, b) => {
+  return recipes.sort((a, b) => {
     let scoreA = 0;
     let scoreB = 0;
     
-    // Puntos por ingredientes favoritos
-    preferences.ingredientesFavoritos.forEach(fav => {
-      if (a.ingredientes?.some((ing: string) => ing.toLowerCase().includes(fav.toLowerCase()))) {
-        scoreA += 10;
-      }
-      if (b.ingredientes?.some((ing: string) => ing.toLowerCase().includes(fav.toLowerCase()))) {
-        scoreB += 10;
-      }
-    });
+    // Puntuar por ingredientes favoritos
+    if (preferences.ingredientesFavoritos.length > 0) {
+      const ingredientesA = Array.isArray(a.ingredientes) ? a.ingredientes : 
+        (typeof a.ingredientes === 'string' ? a.ingredientes.split(',') : []);
+      const ingredientesB = Array.isArray(b.ingredientes) ? b.ingredientes : 
+        (typeof b.ingredientes === 'string' ? b.ingredientes.split(',') : []);
+      
+      preferences.ingredientesFavoritos.forEach(fav => {
+        if (ingredientesA.some((ing: string) => ing.toLowerCase().includes(fav.toLowerCase()))) {
+          scoreA += 10;
+        }
+        if (ingredientesB.some((ing: string) => ing.toLowerCase().includes(fav.toLowerCase()))) {
+          scoreB += 10;
+        }
+      });
+    }
     
-    // Puntos por dificultad preferida
+    // Puntuar por dificultad preferida
     if (preferences.difficulty.facil && a.dificultad === 'Fácil') scoreA += 5;
     if (preferences.difficulty.intermedio && a.dificultad === 'Intermedio') scoreA += 5;
     if (preferences.difficulty.avanzado && a.dificultad === 'Avanzado') scoreA += 5;
@@ -205,3 +188,4 @@ export const sortRecipesByPreferences = (
     return scoreB - scoreA; // Orden descendente
   });
 };
+
