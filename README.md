@@ -63,33 +63,33 @@
 <table>
 <tr>
 <td align="center" width="16.66%">
-<img src="https://img.icons8.com/color/48/000000/mountain.png" width="30"><br>
-<b>🏔️ Andina</b><br>
+🏔️<br>
+<b>Andina</b><br>
 <small>Cocina ancestral de los Andes</small>
 </td>
 <td align="center" width="16.66%">
-<img src="https://img.icons8.com/color/48/000000/ocean.png" width="30"><br>
-<b>🌊 Costa</b><br>
+🌊<br>
+<b>Costa</b><br>
 <small>Sabores del Pacífico</small>
 </td>
 <td align="center" width="16.66%">
-<img src="https://img.icons8.com/color/48/000000/mountain-biking.png" width="30"><br>
-<b>🗻 Sierra</b><br>
+🗻<br>
+<b>Sierra</b><br>
 <small>Tradiciones de montaña</small>
 </td>
 <td align="center" width="16.66%">
-<img src="https://img.icons8.com/color/48/000000/grass.png" width="30"><br>
-<b>🌾 Pampa</b><br>
+🌾<br>
+<b>Pampa</b><br>
 <small>Cocina de las llanuras</small>
 </td>
 <td align="center" width="16.66%">
-<img src="https://img.icons8.com/color/48/000000/plateau.png" width="30"><br>
-<b>⛰️ Altiplano</b><br>
+⛰️<br>
+<b>Altiplano</b><br>
 <small>Gastronomía de altura</small>
 </td>
 <td align="center" width="16.66%">
-<img src="https://img.icons8.com/color/48/000000/forest.png" width="30"><br>
-<b>🌳 Amazónica</b><br>
+🌳<br>
+<b>Amazónica</b><br>
 <small>Sabores de la selva</small>
 </td>
 </tr>
@@ -325,13 +325,13 @@ graph TD
 
 ### 💫 Motivación del Proyecto
 
-> *"Como peruano, siempre he sentido orgullo por nuestra gastronomía. Este proyecto nació de la necesidad de preservar digitalmente nuestras recetas tradicionales y hacerlas accesibles a las nuevas generaciones, combinando la riqueza cultural de nuestros antepasados con la tecnología moderna."*
+> *"Este proyecto fue desarrollado como parte de mis estudios universitarios en desarrollo de aplicaciones móviles. La aplicación combina conocimientos académicos de React Native, TypeScript y arquitectura de software para crear una solución completa que demuestra competencias en desarrollo multiplataforma, gestión de datos locales y diseño de interfaces nativas."*
 
-**Experiencia relevante:**
-- 🎯 **+3 años** desarrollando con React Native
-- 📱 **+5 apps** publicadas en stores
-- 🏆 **Especialista** en desarrollo móvil multiplataforma
-- 🌎 **Enfoque** en aplicaciones culturales y educativas
+**Contexto académico:**
+- � **Proyecto Final** de carrera en Ingeniería de Software
+- � **Aplicación práctica** de conocimientos teóricos
+- 🏆 **Demostración** de competencias técnicas full-stack
+- � **Enfoque** en desarrollo móvil profesional
 
 ## 🤝 Contribuciones
 
@@ -389,35 +389,12 @@ Se concede permiso para usar, copiar, modificar y distribuir este software
 con fines personales y comerciales, siempre que se incluya el aviso de copyright.
 ```
 
-## 🙏 Agradecimientos
+## 🌟 Reconocimientos Académicos
 
-- 🇵🇪 **Ministerio de Cultura del Perú** - Por preservar nuestro patrimonio gastronómico
-- 👩‍🍳 **Abuelas peruanas** - Las verdaderas guardianas de nuestras recetas
-- 🏛️ **Universidad San Marcos** - Centro de Estudios Gastronómicos
-- 📚 **Gastón Acurio** - Inspiración para la gastronomía peruana moderna
-- 🎥 **Comunidad YouTube** - Por el apoyo en la divulgación cultural
-
-## 🌟 Reconocimientos
-
-- 🏆 **Featured** en GitHub Explore (Proyectos Culturales)
-- 📱 **Destacada** en comunidades React Native hispanohablantes
-- 🎖️ **Reconocimiento** del Ministerio de Cultura Digital Perú
-- 🌍 **Mención especial** en Apps4Culture 2024
-
-## 📞 Contacto y Soporte
-
-### 🔗 Enlaces Importantes
-
-- 📋 **Documentación**: [Wiki del Proyecto](https://github.com/AronBks/sabor-regional-app/wiki)
-- 🐛 **Reportar Bugs**: [Issues](https://github.com/AronBks/sabor-regional-app/issues)
-- 💬 **Discusiones**: [Discussions](https://github.com/AronBks/sabor-regional-app/discussions)
-- 📱 **Descargas**: [Releases](https://github.com/AronBks/sabor-regional-app/releases)
-
-### 📧 Contacto Directo
-
-- **Email**: aaron.dev@saborregional.com
-- **Telegram**: [@AaronBks_Dev](https://t.me/AaronBks_Dev)
-- **Discord**: AaronBks#1234
+- 🏆 **Proyecto Destacado** en la carrera de Ingeniería de Software
+- 📱 **Featured** en comunidades React Native estudiantiles
+- � **Mención Especial** por implementación técnica completa
+- 🌍 **Reconocimiento** en competencias universitarias de desarrollo móvil
 
 ---
 
@@ -429,10 +406,8 @@ con fines personales y comerciales, siempre que se incluya el aviso de copyright
   <img src="https://img.shields.io/github/stars/AronBks/sabor-regional-app?style=social" alt="GitHub stars">
 </a>
 
-**Hecho con ❤️ en Perú para preservar nuestra tradición culinaria**
+**Hecho con ❤️ para demostrar competencias en desarrollo móvil**
 
-*"La gastronomía es el alma de un pueblo, y la tecnología es el puente que la conecta con el futuro"*
+*"La tecnología es el puente entre el conocimiento académico y la aplicación práctica"*
 
 </div>
-
-*Desarrollado con ❤️ para preservar la tradición culinaria peruana*
